@@ -10,9 +10,12 @@
 
 ---
 
-## 🌐 Live Working Demo
-- **Public URL (Zero Login Required):** [https://novel-acquire-collectors-running.trycloudflare.com](https://novel-acquire-collectors-running.trycloudflare.com)
-- **Local URL:** `http://localhost:8501`
+## 🎬 Official Demo Video Walkthrough
+[![MandiShield Demo Video](https://img.shields.io/badge/YouTube-Watch%20Demo%20Video-red?style=for-the-badge&logo=youtube)](https://youtu.be/L5b6SEz4df4)
+
+- **YouTube Video:** [https://youtu.be/L5b6SEz4df4](https://youtu.be/L5b6SEz4df4)
+- **Live Working Demo (Public):** [https://novel-acquire-collectors-running.trycloudflare.com](https://novel-acquire-collectors-running.trycloudflare.com)
+- **Local Host:** `http://localhost:8501`
 
 ---
 
