@@ -122,10 +122,11 @@ cp .env.example .env
 # GEMINI_API_KEY="AIzaSy..."
 ```
 
-### 3. Run Test Suite
+### 3. Run Test Suite (14/14 Passing)
 ```bash
-python -m unittest tests/test_mandishield.py
+python -m unittest discover tests
 ```
+*Coverage: Banned chemical Gazette list, CIB&RC syntax and pre-1968 boundary checks, Rule 19 toxicity diamonds, Seeds Act 1966 germination standards, and Agent Skills manifest validation.*
 
 ### 4. Launch Application
 ```bash
