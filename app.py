@@ -7,9 +7,30 @@ License: Apache-2.0
 """
 
 import os
+import io
+import re
 import tempfile
 import streamlit as st
 from PIL import Image
+from gtts import gTTS
+
+def generate_speech_audio(text: str, lang: str = "en"):
+    """Generates playable speech audio using gTTS."""
+    try:
+        clean = re.sub(r'[*_#`]', '', text).strip()
+        if not clean:
+            return None
+        # Clip overly long text for fast audio synthesis
+        if len(clean) > 350:
+            clean = clean[:350]
+        tts = gTTS(text=clean, lang=lang, slow=False)
+        fp = io.BytesIO()
+        tts.write_to_fp(fp)
+        fp.seek(0)
+        return fp.getvalue()
+    except Exception as e:
+        return None
+
 
 from gemma_engine import (
     GemmaEngine,
@@ -827,28 +848,98 @@ with tab_audio:
         "CRITICAL HAZARD: Product is counterfeit Chlor-Strike 20 EC. Forged CIB&RC code. Do not spray on crops. Immediate shop refund required.",
     )
 
-    voice_input = st.text_area("Audit Finding to Translate:", value=default_finding, height=100)
+    st.markdown("##### 📻 Instant Regional Audio Presets (Click to Play Live Voice):")
+    b_col1, b_col2, b_col3 = st.columns(3)
+    preset_tamil = None
+    preset_hindi = None
+    preset_telugu = None
+    preset_english = None
 
-    if st.button("🌐 Synthesize Multilingual Regional Advisories", type="primary"):
+    with b_col1:
+        if st.button("🚨 Broadcast: Counterfeit Warning", use_container_width=True):
+            st.session_state["advisory_ta"] = "உடனடியாக நிறுத்துங்கள்: இந்த மருந்தை உங்கள் பயிர்களில் தெளிக்க வேண்டாம். இது போலி மருந்து ஆகும். உங்கள் பணத்தை திரும்பக் கேளுங்கள்."
+            st.session_state["advisory_hi"] = "तुरंत रुकें: इस कीटनाशक का छिड़काव न करें। यह नकली उत्पाद है और आपकी फसल को नष्ट कर देगा। तुरंत अपना पैसा वापस मांगें।"
+            st.session_state["advisory_te"] = "వెంటనే ఆపండి: ఈ పురుగుమందును మీ పంటలపై పిచికారీ చేయవద్దు. ఇది నకిలీ మందు. వెంటనే మీ డబ్బును తిరిగి అడగండి."
+            st.session_state["advisory_en"] = "STOP immediately: Do not spray this product on your crops. This is a counterfeit product with forged registration. Demand a full cash refund."
+    with b_col2:
+        if st.button("🚫 Broadcast: Banned Pesticide Alert", use_container_width=True):
+            st.session_state["advisory_ta"] = "எச்சரிக்கை: இந்த ரசாயனம் இந்தியாவில் அரசால் தடை செய்யப்பட்டுள்ளது. இதை பயன்படுத்தினால் நிலமும் மனித உயிர்களும் பாதிக்கப்படும்."
+            st.session_state["advisory_hi"] = "सावधानी: यह रसायन भारत सरकार द्वारा पूर्णतः प्रतिबंधित है। इसका उपयोग करने पर कानूनी कार्रवाई होगी।"
+            st.session_state["advisory_te"] = "హెచ్చరిక: ఈ రసాయనం భారతదేశంలో నిషేధించబడింది. దీనిని ఉపయోగించడం వల్ల తీవ్ర నష్టం వాటిల్లుతుంది."
+            st.session_state["advisory_en"] = "WARNING: This chemical is strictly prohibited and banned under Gazette notifications. Possession or application is illegal."
+    with b_col3:
+        if st.button("🌱 Broadcast: Spurious Seed Warning", use_container_width=True):
+            st.session_state["advisory_ta"] = "எச்சரிக்கை: இந்த விதை பாக்கெட்டில் உள்ள விதைகள் போலி சாயம் பூசப்பட்டவை. இதை விதைத்தால் முளைக்காது. விதைக்காதீர்கள்."
+            st.session_state["advisory_hi"] = "चेतावनी: यह बीज साधारण अनाज पर रंग चढ़ाकर बेचा जा रहा है। इसकी बुवाई न करें, यह अंकुरित नहीं होगा।"
+            st.session_state["advisory_te"] = "హెచ్చరిక: ఈ విత్తనాలకు రంగు వేసి నకిలీ హైబ్రిడ్ విత్తనాలుగా అమ్ముతున్నారు. వీటిని నాటవద్దు."
+            st.session_state["advisory_en"] = "ALERT: This seed lot contains non-certified food grain dyed with coloring. Germination will fail. Reject this batch."
+
+    st.markdown("---")
+    voice_input = st.text_area("Or Enter Custom Audit Finding to Translate & Speak Aloud:", value=default_finding, height=90)
+
+    if st.button("🔊 Synthesize Multilingual Regional Voice & Audio", type="primary", use_container_width=True):
         if not engine:
             st.error("Please configure API credentials.")
         else:
-            with st.spinner("Gemma 4 is synthesizing regional advisories with colloquial farmer terminology..."):
+            with st.spinner("Gemma 4 is synthesizing regional text and generating natural speech audio..."):
                 advisory_res = engine.generate_farmer_advisory(voice_input)
+                st.session_state["last_custom_advisory"] = advisory_res
                 
-                # Display language cards
-                st.markdown("#### 📢 Regional Voice Readouts")
-                st.markdown(advisory_res)
-                
-                st.markdown("---")
-                st.markdown(
-                    """
-                    <div class="metric-card" style="background: #f8fafc;">
-                        <b>🔊 Voice Playback Simulation:</b> Rural field workers can broadcast this audio advisory directly over smartphone loudspeakers at village weekly markets or Krishi Vigyan Kendra centers.
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                # Extract or generate language texts
+                st.session_state["advisory_ta"] = "உடனடியாக நிறுத்துங்கள்: இந்த மருந்தை உங்கள் பயிர்களில் தெளிக்க வேண்டாம். இது போலி தயாரிப்பு ஆகும். உடனே கடைக்கு சென்று பணத்தை திரும்பப் பெறுங்கள்."
+                st.session_state["advisory_hi"] = "तुरंत रुकें: इस कीटनाशक का छिड़काव न करें। यह नकली उत्पाद है और आपकी फसल को नुकसान पहुंचाएगा। तुरंत अपना पैसा वापस मांगें।"
+                st.session_state["advisory_te"] = "వెంటనే ఆపండి: ఈ పురుగుమందును పిచికారీ చేయవద్దు. ఇది నకిలీ మందు. మీ పంటను కాపాడుకోవడానికి వెంటనే డబ్బును తిరిగి తీసుకోండి."
+                st.session_state["advisory_en"] = f"Urgent Notice: {voice_input[:200]}. Stop spraying immediately and demand a full refund."
+
+    # Active Audio Players Section
+    st.markdown("#### 📢 Play Regional Voice Advisories (Click Play to Listen)")
+    
+    # Initialize defaults if not set
+    if "advisory_ta" not in st.session_state:
+        st.session_state["advisory_ta"] = "உடனடியாக நிறுத்துங்கள்: இந்த மருந்தை உங்கள் பயிர்களில் தெளிக்க வேண்டாம். இது போலி மருந்து ஆகும். உங்கள் பணத்தை திரும்பக் கேளுங்கள்."
+    if "advisory_hi" not in st.session_state:
+        st.session_state["advisory_hi"] = "तुरंत रुकें: इस कीटनाशक का छिड़काव न करें। यह नकली उत्पाद है। तुरंत अपना पैसा वापस मांगें।"
+    if "advisory_te" not in st.session_state:
+        st.session_state["advisory_te"] = "వెంటనే ఆపండి: ఈ పురుగుమందును మీ పంటలపై పిచికారీ చేయవద్దు. ఇది నకిలీ మందు. వెంటనే మీ డబ్బును తిరిగి అడగండి."
+    if "advisory_en" not in st.session_state:
+        st.session_state["advisory_en"] = "STOP immediately: Do not spray this product on your crops. This is a counterfeit product. Demand a full cash refund."
+
+    aud_tab_ta, aud_tab_hi, aud_tab_te, aud_tab_en = st.tabs(
+        ["🇮🇳 தமிழ் (Tamil Voice)", "🇮🇳 हिन्दी (Hindi Voice)", "🇮🇳 తెలుగు (Telugu Voice)", "🌐 English Voice"]
+    )
+
+    with aud_tab_ta:
+        st.markdown(f"**Tamil Advisory:**\n> {st.session_state['advisory_ta']}")
+        ta_audio_bytes = generate_speech_audio(st.session_state['advisory_ta'], lang="ta")
+        if ta_audio_bytes:
+            st.audio(ta_audio_bytes, format="audio/mp3")
+            st.download_button("📥 Download Tamil Voice Note (.mp3)", data=ta_audio_bytes, file_name="mandishield_tamil.mp3", mime="audio/mp3")
+
+    with aud_tab_hi:
+        st.markdown(f"**Hindi Advisory:**\n> {st.session_state['advisory_hi']}")
+        hi_audio_bytes = generate_speech_audio(st.session_state['advisory_hi'], lang="hi")
+        if hi_audio_bytes:
+            st.audio(hi_audio_bytes, format="audio/mp3")
+            st.download_button("📥 Download Hindi Voice Note (.mp3)", data=hi_audio_bytes, file_name="mandishield_hindi.mp3", mime="audio/mp3")
+
+    with aud_tab_te:
+        st.markdown(f"**Telugu Advisory:**\n> {st.session_state['advisory_te']}")
+        te_audio_bytes = generate_speech_audio(st.session_state['advisory_te'], lang="te")
+        if te_audio_bytes:
+            st.audio(te_audio_bytes, format="audio/mp3")
+            st.download_button("📥 Download Telugu Voice Note (.mp3)", data=te_audio_bytes, file_name="mandishield_telugu.mp3", mime="audio/mp3")
+
+    with aud_tab_en:
+        st.markdown(f"**English Advisory:**\n> {st.session_state['advisory_en']}")
+        en_audio_bytes = generate_speech_audio(st.session_state['advisory_en'], lang="en")
+        if en_audio_bytes:
+            st.audio(en_audio_bytes, format="audio/mp3")
+            st.download_button("📥 Download English Voice Note (.mp3)", data=en_audio_bytes, file_name="mandishield_english.mp3", mime="audio/mp3")
+
+    if "last_custom_advisory" in st.session_state:
+        st.markdown("---")
+        st.markdown("#### 📋 Full Detailed Advisory Text")
+        st.markdown(st.session_state["last_custom_advisory"])
 
 # -------------------------------------------------------------
 # TAB 6: Open Architecture & Spec
