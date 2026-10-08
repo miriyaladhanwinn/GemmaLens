@@ -137,7 +137,7 @@ A recorded walkthrough demonstrates uploading a sample architecture topology, vi
 ### Installation
 
 ```bash
-git clone https://github.com/MRLDHANWINN/GemmaLens.git
+git clone https://github.com/miriyaladhanwinn/GemmaLens.git
 cd GemmaLens
 pip install -r requirements.txt
 ```
