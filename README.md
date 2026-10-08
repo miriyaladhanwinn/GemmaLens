@@ -99,12 +99,11 @@ The entire GemmaLens project was designed, implemented, and verified during Hack
 
 ## Working Application
 
-**Live Application:** Deployed locally at `http://localhost:8501` (and deployable to DigitalOcean App Platform using the Hacktoberfest credit).
+**Live Application:** [https://curvy-socks-search.loca.lt](https://curvy-socks-search.loca.lt)
 
-The application allows users to:
-1. Ingest architecture diagrams and get Single Point of Failure (SPOF) reports.
-2. Test code snippets for pointer safety and memory leaks.
-3. Generate and download validated `SKILL.md` packages.
+*(Bypass password / Tunnel IP if prompted: `202.88.252.190`)*
+
+The application is fully functional and accessible online. Users and judges can upload diagrams, audit C code, and export Agent Skills directly in their browser.
 
 ## Demo Video
 
