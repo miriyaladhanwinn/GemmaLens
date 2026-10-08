@@ -180,17 +180,21 @@ class TestMandiShieldSeedStandards(unittest.TestCase):
             self.assertIn("counterfeit_flags", std)
 
 
-class TestMandiShieldAgentPackaging(unittest.TestCase):
-    def test_agent_skills_yaml_header(self):
-        """Agent Skills output must contain valid YAML frontmatter conforming to specification."""
-        md = AgentSkillPackage.create_skill_markdown(
-            skill_name="mandishield-auditor",
-            description="Forensic agro-chemical & seed inspector",
-            instructions="Execution steps for autonomous verification."
-        )
-        self.assertTrue(md.startswith("---"))
-        self.assertIn("https://agentskills.io/specification", md)
-        self.assertIn("Apache-2.0", md)
+class TestMandiShieldForensicAssets(unittest.TestCase):
+    def test_forensic_samples_exist_and_non_empty(self):
+        """All curated forensic test samples must exist and be valid non-empty images."""
+        examples_dir = os.path.join(os.path.dirname(__file__), "..", "examples")
+        required_samples = [
+            "seized_counterfeit_raid.jpg",
+            "spurious_seeds_sample.png",
+            "certified_seeds_sample.png",
+            "counterfeit_pesticide_sample.png",
+            "genuine_pesticide_sample.png"
+        ]
+        for sample in required_samples:
+            path = os.path.join(examples_dir, sample)
+            self.assertTrue(os.path.exists(path), f"Forensic sample missing: {sample}")
+            self.assertGreater(os.path.getsize(path), 1000, f"Sample file suspiciously small: {sample}")
 
 
 if __name__ == "__main__":

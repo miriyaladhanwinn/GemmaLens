@@ -321,65 +321,52 @@ with tab_pesticide:
         "Verify genuine pesticide containers, active chemical percentages, statutory Rule 19 toxicity diamonds, and detect flat-print counterfeit labeling."
     )
 
-    # Human-Friendly Test Case Cards
-    st.markdown("##### 📁 Select a Curated Forensic Case or Upload Your Photo")
-    c1, c2, c3 = st.columns(3)
-    selected_sample = None
+    # Forensic Inspection Case Selector
+    st.markdown("##### 📁 Select Curated Forensic Inspection Case or Ingest Field Photo:")
+    pest_case = st.radio(
+        "Inspection Sample Case:",
+        [
+            "🚨 Case 1: Enforcement Raid Seizure Sample (Official Inspection of Illicit Warehouse Container)",
+            "⚠️ Case 2: Counterfeit Packaging Formulation (Mislabeled Active Molecule & Fraudulent Code)",
+            "✅ Case 3: Certified Schedule Formulation (Standard Compliant Batch & Yellow Poison Triangle)",
+            "📸 Case 4: Upload Custom Field Container Photo",
+        ],
+        index=0,
+        label_visibility="collapsed",
+    )
 
-    with c1:
-        st.markdown(
-            """
-            <div class="metric-card" style="border-left: 4px solid #ef4444;">
-                <div style="font-weight: 700; color: #b91c1c;">🚨 Case 1: Spurious Formulation</div>
-                <div style="font-size: 0.82rem; color: #64748b; margin: 0.4rem 0;">
-                    • Trade Name: Chlor-Strike 20 EC<br>
-                    • Flaw: Misspelled active molecule, fake 1965 CIB&RC code, wrong green caution diamond.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+    if "Case 1" in pest_case:
+        target_pesticide_img = os.path.join(
+            os.path.dirname(__file__), "examples", "seized_counterfeit_raid.jpg"
         )
-        if st.button("Load Case 1 (Counterfeit)", key="btn_case_1", use_container_width=True):
-            st.session_state["active_pesticide"] = os.path.join(
-                os.path.dirname(__file__), "examples", "counterfeit_pesticide_sample.png"
-            )
-
-    with c2:
-        st.markdown(
-            """
-            <div class="metric-card" style="border-left: 4px solid #10b981;">
-                <div style="font-weight: 700; color: #047857;">✅ Case 2: Certified Product</div>
-                <div style="font-size: 0.82rem; color: #64748b; margin: 0.4rem 0;">
-                    • Trade Name: Bayer Confidor 17.8 SL<br>
-                    • Certified: Genuine CIB&RC CIR-14820, yellow poison triangle, dot-matrix inkjet batch.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        default_context = (
+            "Seized container during regulatory raid at unauthorized rural distribution warehouse. "
+            "Container is soiled and uncertified, missing statutory CIB&RC manufacturer license and QR batch code."
         )
-        if st.button("Load Case 2 (Genuine)", key="btn_case_2", use_container_width=True):
-            st.session_state["active_pesticide"] = os.path.join(
-                os.path.dirname(__file__), "examples", "genuine_pesticide_sample.png"
-            )
-
-    with c3:
-        st.markdown(
-            """
-            <div class="metric-card" style="border-left: 4px solid #3b82f6;">
-                <div style="font-weight: 700; color: #1d4ed8;">📸 Case 3: Live Custom Image</div>
-                <div style="font-size: 0.82rem; color: #64748b; margin: 0.4rem 0;">
-                    • Ingest any field photo<br>
-                    • Analyzes container front/back labels, QR codes, and tamper-evident cap seals.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+    elif "Case 2" in pest_case:
+        target_pesticide_img = os.path.join(
+            os.path.dirname(__file__), "examples", "counterfeit_pesticide_sample.png"
         )
-        upload_pest = st.file_uploader("Upload container photo", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
-        if upload_pest:
-            st.session_state["active_pesticide"] = cache_image(upload_pest)
+        default_context = (
+            "Container purchased at local weekly mandi without printed bill. "
+            "Active ingredient spelling appears altered, flat offset printing detected, green caution diamond used instead of yellow poison."
+        )
+    elif "Case 3" in pest_case:
+        target_pesticide_img = os.path.join(
+            os.path.dirname(__file__), "examples", "genuine_pesticide_sample.png"
+        )
+        default_context = (
+            "Purchased from authorized dealer with GST bill. "
+            "Statutory verification of CIB&RC registration CIR-14820 and yellow poison triangle with dot-matrix inkjet batch printing."
+        )
+    else:
+        upload_pest = st.file_uploader(
+            "Upload container photo", type=["png", "jpg", "jpeg"], label_visibility="collapsed"
+        )
+        target_pesticide_img = cache_image(upload_pest) if upload_pest else None
+        default_context = "Field sample collected for statutory verification."
 
-    target_pesticide_img = st.session_state.get("active_pesticide", None)
+    st.session_state["active_pesticide"] = target_pesticide_img
 
     st.markdown("---")
     col_p_img, col_p_details = st.columns([1, 1])
@@ -497,7 +484,7 @@ with tab_pesticide:
 
         audit_context = st.text_area(
             "Field Observations / Mandi Context:",
-            value="Container purchased at local weekly market without printed bill. Batch number printing looks suspiciously flat.",
+            value=default_context,
             height=80,
         )
 
@@ -518,93 +505,95 @@ with tab_pesticide:
                     )
                     st.session_state["pesticide_report"] = audit_output
                     st.success("Inspection completed successfully.")
-
-                    # Human-crafted Visual Scorecard
-                    is_counterfeit = "COUNTERFEIT" in audit_output.upper() or "SUSPECT" in audit_output.upper()
-                    if is_counterfeit:
-                        st.markdown(
-                            """
-                            <div class="verdict-banner-danger">
-                                <div class="verdict-title" style="color: #b91c1c;">🚨 STATUTORY VIOLATION / HIGH FRAUD RISK DETECTED</div>
-                                <div class="verdict-body">
-                                    This container displays clear evidence of counterfeit packaging, fraudulent registration numbering, or sub-standard chemical composition.
-                                    <b>Do not spray on crops. Immediate seizure recommended under Section 21 of the Insecticides Act 1968.</b>
-                                </div>
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-                    else:
-                        st.markdown(
-                            """
-                            <div class="verdict-banner-success">
-                                <div class="verdict-title" style="color: #047857;">✅ CERTIFIED STATUTORY COMPLIANT PRODUCT</div>
-                                <div class="verdict-body">
-                                    Packaging displays genuine CIB&RC registration numbering, verified manufacturer credentials, compliant Rule 19 toxicity labeling, and authentic inkjet printing.
-                                </div>
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-
-                    # Forensic Matrix Grid
-                    m1, m2, m3, m4 = st.columns(4)
-                    with m1:
-                        st.markdown(
-                            """
-                            <div class="metric-card">
-                                <div class="metric-label">Chemical Molecule</div>
-                                <div class="metric-value" style="font-size: 1.1rem;">Checked</div>
-                                <div style="font-size: 0.75rem; color: #64748b;">Formula & spelling audited</div>
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-                    with m2:
-                        st.markdown(
-                            """
-                            <div class="metric-card">
-                                <div class="metric-label">CIB&RC Registry</div>
-                                <div class="metric-value" style="font-size: 1.1rem;">Verified</div>
-                                <div style="font-size: 0.75rem; color: #64748b;">CIR code syntax & year tested</div>
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-                    with m3:
-                        st.markdown(
-                            """
-                            <div class="metric-card">
-                                <div class="metric-label">Toxicity Triangle</div>
-                                <div class="metric-value" style="font-size: 1.1rem;">Rule 19</div>
-                                <div style="font-size: 0.75rem; color: #64748b;">Color matched to Oral LD50</div>
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-                    with m4:
-                        st.markdown(
-                            """
-                            <div class="metric-card">
-                                <div class="metric-label">Print Forensics</div>
-                                <div class="metric-value" style="font-size: 1.1rem;">Inkjet vs Offset</div>
-                                <div style="font-size: 0.75rem; color: #64748b;">Batch method scrutinized</div>
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
-                        )
-
-                    st.markdown("#### 📋 Exhaustive Forensic Report")
-                    st.markdown(audit_output)
-
-                    st.download_button(
-                        "📥 Download Official Forensic Dossier (.md)",
-                        data=audit_output,
-                        file_name="mandishield_forensic_audit.md",
-                        mime="text/markdown",
-                    )
                 except Exception as ex:
                     st.error(f"Analysis interrupted: {ex}")
+
+    if st.session_state.get("pesticide_report"):
+        audit_output = st.session_state["pesticide_report"]
+        # Human-crafted Visual Scorecard
+        is_counterfeit = any(w in audit_output.upper() for w in ["COUNTERFEIT", "SUSPECT", "VIOLATION", "NON-COMPLIANCE", "CRITICAL"])
+        if is_counterfeit:
+            st.markdown(
+                """
+                <div class="verdict-banner-danger">
+                    <div class="verdict-title" style="color: #b91c1c;">🚨 STATUTORY VIOLATION / HIGH FRAUD RISK DETECTED</div>
+                    <div class="verdict-body">
+                        This container displays clear evidence of counterfeit packaging, fraudulent registration numbering, or sub-standard chemical composition.
+                        <b>Do not spray on crops. Immediate seizure recommended under Section 21 of the Insecticides Act 1968.</b>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                """
+                <div class="verdict-banner-success">
+                    <div class="verdict-title" style="color: #047857;">✅ CERTIFIED STATUTORY COMPLIANT PRODUCT</div>
+                    <div class="verdict-body">
+                        Packaging displays genuine CIB&RC registration numbering, verified manufacturer credentials, compliant Rule 19 toxicity labeling, and authentic inkjet printing.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        # Forensic Matrix Grid
+        m1, m2, m3, m4 = st.columns(4)
+        with m1:
+            st.markdown(
+                """
+                <div class="metric-card">
+                    <div class="metric-label">Chemical Molecule</div>
+                    <div class="metric-value" style="font-size: 1.1rem;">Checked</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Formula & spelling audited</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with m2:
+            st.markdown(
+                """
+                <div class="metric-card">
+                    <div class="metric-label">CIB&RC Registry</div>
+                    <div class="metric-value" style="font-size: 1.1rem;">Verified</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">CIR code syntax & year tested</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with m3:
+            st.markdown(
+                """
+                <div class="metric-card">
+                    <div class="metric-label">Toxicity Triangle</div>
+                    <div class="metric-value" style="font-size: 1.1rem;">Rule 19</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Color matched to Oral LD50</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with m4:
+            st.markdown(
+                """
+                <div class="metric-card">
+                    <div class="metric-label">Print Forensics</div>
+                    <div class="metric-value" style="font-size: 1.1rem;">Inkjet vs Offset</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Batch method scrutinized</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.markdown("#### 📋 Exhaustive Forensic Report")
+        st.markdown(audit_output)
+
+        st.download_button(
+            "📥 Download Official Forensic Dossier (.md)",
+            data=audit_output,
+            file_name="mandishield_forensic_audit.md",
+            mime="text/markdown",
+        )
 
 # -------------------------------------------------------------
 # TAB 2: Seed Coating & Purity Inspector
@@ -617,20 +606,35 @@ with tab_seeds:
 
     sc1, sc2 = st.columns([1, 1])
     with sc1:
-        if st.button("🚩 Load Forensic Sample: Spurious Dyed Cotton Seed Lot", use_container_width=True):
-            st.session_state["active_seed"] = os.path.join(
-                os.path.dirname(__file__), "examples", "spurious_seeds_sample.png"
-            )
-
-        upload_seed = st.file_uploader("Or upload seed macro photo", type=["png", "jpg", "jpeg"])
-        if upload_seed:
-            st.session_state["active_seed"] = cache_image(upload_seed)
-
-        seed_target = st.session_state.get("active_seed", None)
-        if seed_target and os.path.exists(seed_target):
-            st.image(Image.open(seed_target), caption="Seed Lot Macro Inspection Target", use_container_width=True)
+        st.markdown("##### 📁 Select Seed Inspection Case:")
+        seed_case = st.radio(
+            "Target Seed Lot:",
+            [
+                "🚨 Case 1: Spurious Dyed Cotton Seeds (Laboratory Tray Forensic Photo - High Chaff & Cracked Grains)",
+                "✅ Case 2: Certified Hybrid Seeds (Uniform Polymer Coating - 99.1% Germination)",
+                "📸 Upload Custom Macro Seed Photo"
+            ],
+            index=0,
+            label_visibility="collapsed"
+        )
+        
+        if "Case 1" in seed_case:
+            seed_target = os.path.join(os.path.dirname(__file__), "examples", "spurious_seeds_sample.png")
+            default_seed_notes = "Laboratory tray examination: Sample displays non-uniform food dye rubbing off on touch, cracked grain hulls, visible lint fuzz, and inert chaff > 7.5%. High germination failure risk."
+        elif "Case 2" in seed_case:
+            seed_target = os.path.join(os.path.dirname(__file__), "examples", "certified_seeds_sample.png")
+            default_seed_notes = "Certified hybrid seed lot NYB-45: Uniform polymer fungicide film (Thiram 75% WP), zero inert matter, verified 99.1% germination rate with official NSC certification tag."
         else:
-            st.info("👆 Load the forensic sample or upload a seed close-up photograph above.")
+            upload_seed = st.file_uploader("Upload seed macro photo", type=["png", "jpg", "jpeg"])
+            seed_target = cache_image(upload_seed) if upload_seed else None
+            default_seed_notes = "Field seed sample collected for certification audit."
+            
+        st.session_state["active_seed"] = seed_target
+
+        if seed_target and os.path.exists(seed_target):
+            st.image(Image.open(seed_target), caption=f"Active Seed Inspection Target ({os.path.basename(seed_target)})", use_container_width=True)
+        else:
+            st.info("👆 Please upload a seed close-up photograph above.")
 
     with sc2:
         crop_std_key = st.selectbox(
@@ -657,7 +661,8 @@ with tab_seeds:
 
         seed_notes_input = st.text_area(
             "Physical Lot Inspection Notes:",
-            value="Color flaking off easily on palms upon contact; noticed high percentage of broken chaff in the bag.",
+            value=default_seed_notes,
+            height=85,
         )
 
         run_seed_audit = st.button("🔬 Audit Seed Quality with Gemma 4", type="primary", use_container_width=True)
@@ -675,10 +680,97 @@ with tab_seeds:
                         sample_details=f"Crop: {cur_std['crop']}\nField Notes: {seed_notes_input}",
                         thinking_level=reasoning_depth,
                     )
-                    st.markdown("### 🌾 Seed Certification Audit Findings")
-                    st.markdown(seed_report)
+                    st.session_state["seed_report"] = seed_report
+                    st.success("Seed quality audit completed successfully.")
                 except Exception as ex:
                     st.error(f"Inference error: {ex}")
+
+    # Seed Audit Report Display & Visual Scorecard
+    if st.session_state.get("seed_report"):
+        seed_report_text = st.session_state["seed_report"]
+        is_spurious = any(w in seed_report_text.upper() for w in ["SPURIOUS", "FAIL", "CRITICAL", "REJECT", "NON-COMPLIANCE", "DISCREPANCY", "NON-COMPLIANT"])
+        
+        if is_spurious:
+            st.markdown(
+                """
+                <div class="verdict-banner-danger">
+                    <div class="verdict-title" style="color: #b91c1c;">🚨 STATUTORY REJECTION / SPURIOUS SEED LOT DETECTED</div>
+                    <div class="verdict-body">
+                        Severe morphological defects, non-uniform dye coating, or cracked non-viable embryos detected.
+                        <b>Sowing this lot will lead to catastrophic germination failure. Immediate seizure recommended under Section 7 & 19 of the Seeds Act 1966.</b>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                """
+                <div class="verdict-banner-success">
+                    <div class="verdict-title" style="color: #047857;">✅ CERTIFIED STATUTORY COMPLIANT SEED LOT</div>
+                    <div class="verdict-body">
+                        Seed lot exhibits uniform chemical fungicide coating, permissible inert matter thresholds, and complies with National Seeds Corporation purity standards.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        sm1, sm2, sm3, sm4 = st.columns(4)
+        with sm1:
+            st.markdown(
+                """
+                <div class="metric-card">
+                    <div class="metric-label">Germination Viability</div>
+                    <div class="metric-value" style="font-size: 1.1rem;">Morphology Checked</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Embryo integrity scrutinized</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with sm2:
+            st.markdown(
+                """
+                <div class="metric-card">
+                    <div class="metric-label">Fungicide Coating</div>
+                    <div class="metric-value" style="font-size: 1.1rem;">Chemical vs Dye</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Polymer binding verified</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with sm3:
+            st.markdown(
+                """
+                <div class="metric-card">
+                    <div class="metric-label">Inert Matter & Chaff</div>
+                    <div class="metric-value" style="font-size: 1.1rem;">< 2.0% Statutory</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Foreign matter evaluated</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with sm4:
+            st.markdown(
+                """
+                <div class="metric-card">
+                    <div class="metric-label">Statutory Verdict</div>
+                    <div class="metric-value" style="font-size: 1.1rem;">Seeds Act 1966</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Section 7/19 statutory rule</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.markdown("#### 📋 Official Seed Certification Dossier")
+        st.markdown(seed_report_text)
+
+        st.download_button(
+            "📥 Download Official Seed Inspection Dossier (.md)",
+            data=seed_report_text,
+            file_name="mandishield_seed_inspection_dossier.md",
+            mime="text/markdown",
+        )
 
 # -------------------------------------------------------------
 # TAB 3: Statutory Gazette Registry
