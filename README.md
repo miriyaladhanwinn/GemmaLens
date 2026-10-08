@@ -11,7 +11,7 @@
 ---
 
 ## 🌐 Live Working Demo
-- **Public URL (Zero Login Required):** [https://female-memories-ads-desktops.trycloudflare.com](https://female-memories-ads-desktops.trycloudflare.com)
+- **Public URL (Zero Login Required):** [https://novel-acquire-collectors-running.trycloudflare.com](https://novel-acquire-collectors-running.trycloudflare.com)
 - **Local URL:** `http://localhost:8501`
 
 ---
