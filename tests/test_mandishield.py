@@ -3,9 +3,11 @@ MandiShield Comprehensive Unit & Integration Test Suite
 Verifies:
 1. Indian CIB&RC registration code validation & edge case handling
 2. Banned chemical detection against the Gazette of India
-3. Statutory Toxicity Triangle (Rule 19) classification & color extraction
-4. Seed purity & physical germination thresholds (Seeds Act 1966)
-5. Forensic text parser for human-friendly UI card rendering
+3. Counterfeit Adulterant detection (Water, Chalk, Kerosene, Textile Dye)
+4. Chemical Dossier lookups (Sector, Human Danger, Target Crops, Antidote)
+5. Statutory Toxicity Triangle (Rule 19) classification & color extraction
+6. Seed purity & physical germination thresholds (Seeds Act 1966)
+7. Agent Skills Open Standard packaging
 """
 
 import unittest
@@ -16,10 +18,13 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from agri_db import (
+    lookup_chemical_dossier,
     check_banned_chemical,
     validate_cibrc_format,
     evaluate_toxicity_diamond,
     BANNED_PESTICIDES_INDIA,
+    APPROVED_CIBRC_CHEMICALS,
+    KNOWN_ADULTERANTS,
     TOXICITY_DIAMONDS,
     SEED_STANDARDS,
     AUTHORIZED_MANUFACTURERS
@@ -64,6 +69,52 @@ class TestMandiShieldBannedChemicals(unittest.TestCase):
             self.assertIsNone(check_banned_chemical(chem), f"False positive for safe chemical: {chem}")
 
 
+class TestMandiShieldChemicalDossierAndAdulterants(unittest.TestCase):
+    def test_water_flagged_as_counterfeit_adulterant(self):
+        """'Water' must be caught as a counterfeit adulterant and NEVER as an approved pesticide."""
+        dossier = lookup_chemical_dossier("water")
+        self.assertEqual(dossier["category"], "ADULTERANT")
+        self.assertEqual(dossier["verdict"], "FRAUD_SUSPECT")
+        self.assertIn("Adulterant", dossier["type"])
+        self.assertIn("crop destruction", dossier["human_danger"].lower())
+
+        # Also test variations like 'tap water'
+        dossier_tap = lookup_chemical_dossier("tap water")
+        self.assertEqual(dossier_tap["category"], "ADULTERANT")
+
+    def test_other_adulterants_detected(self):
+        """Kerosene, chalk, and textile dyes must be detected as diluents/counterfeits."""
+        for adult in ["kerosene", "chalk", "diesel", "textile dye"]:
+            dossier = lookup_chemical_dossier(adult)
+            self.assertEqual(dossier["category"], "ADULTERANT", f"Failed for {adult}")
+
+    def test_approved_chemical_dossier_integrity(self):
+        """Approved chemicals must return sector, approved crops, target pests, and human danger."""
+        test_chems = ["imidacloprid", "chlorantraniliprole", "glyphosate", "mancozeb", "azadirachtin"]
+        for c in test_chems:
+            dossier = lookup_chemical_dossier(c)
+            self.assertEqual(dossier["category"], "APPROVED", f"Failed for {c}")
+            self.assertIn("sector", dossier)
+            self.assertIn("approved_crops", dossier)
+            self.assertIn("target_pests", dossier)
+            self.assertIn("human_danger", dossier)
+            self.assertIn("antidote", dossier)
+
+    def test_human_danger_level_reported(self):
+        """Pesticides must accurately report human hazard."""
+        d_coragen = lookup_chemical_dossier("chlorantraniliprole")
+        self.assertIn("SAFE FOR OPERATORS", d_coragen["human_danger"])
+
+        d_endo = lookup_chemical_dossier("endosulfan")
+        self.assertIn("CRITICAL / LETHAL", d_endo["human_danger"])
+
+    def test_unregistered_unknown_input(self):
+        """Completely random or unregistered strings must return UNKNOWN warning."""
+        d_unknown = lookup_chemical_dossier("xyz123fakechemical")
+        self.assertEqual(d_unknown["category"], "UNKNOWN")
+        self.assertIn("NOT listed", d_unknown["message"])
+
+
 class TestMandiShieldCIBRCValidation(unittest.TestCase):
     def test_valid_cibrc_formats(self):
         """Valid CIB&RC codes spanning multiple years and formats must pass."""
@@ -79,12 +130,10 @@ class TestMandiShieldCIBRCValidation(unittest.TestCase):
 
     def test_invalid_cibrc_years(self):
         """Years prior to 1970 or future years past 2026 must be rejected."""
-        # 1965 precedes Insecticides Act 1968
         valid, msg = validate_cibrc_format("CIR-0014/1965/INVALID")
         self.assertFalse(valid)
         self.assertIn("Invalid registration year", msg)
 
-        # 2045 is an invalid future year
         valid2, msg2 = validate_cibrc_format("CIR-99999/2045/FAKE")
         self.assertFalse(valid2)
         self.assertIn("Invalid registration year", msg2)
