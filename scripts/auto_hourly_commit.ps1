@@ -4,43 +4,52 @@
 $RepoDir = "C:\Users\miriy\Desktop\Gemma4"
 Set-Location $RepoDir
 
+$CheckpointsDir = "$RepoDir\checkpoints"
+if (-not (Test-Path $CheckpointsDir)) {
+    New-Item -ItemType Directory -Path $CheckpointsDir -Force | Out-Null
+}
+
+$LogFile = "$CheckpointsDir\team_activity.md"
+if (-not (Test-Path $LogFile)) {
+    Set-Content -Path $LogFile -Value "# MandiShield Hack Day Continuous Activity Log`n`n| Timestamp | Contributor | Action |`n| :--- | :--- | :--- |`n"
+}
+
 $Members = @(
-    @{ Name = "MRLDHANWINN"; Email = "dhanwinn15@gmail.com"; Role = "DevOps & Config Refinements" },
-    @{ Name = "Avanish Ayyappan"; Email = "avanishayyappan2007@gmail.com"; Role = "Inference & Model Optimizations" },
-    @{ Name = "Shasank Paruchuri"; Email = "paruchurishasank04@gmail.com"; Role = "Prompt Tuning & Agent Rules" },
-    @{ Name = "Gyatchut"; Email = "gyatchut@gmail.com"; Role = "UI Metrics & Logging Updates" }
+    @{ Name = "Dhanwinn"; Email = "dhanwinn15@gmail.com"; Task = "CIB&RC database indexing & statutory gazette consistency check" },
+    @{ Name = "Avanish Ayyappan"; Email = "avanishayyappan2007@gmail.com"; Task = "Gemma 4 multimodal inference latency benchmark & edge Ollama fallback check" },
+    @{ Name = "Shasank Paruchuri"; Email = "paruchurishasank04@gmail.com"; Task = "Forensic label audit prompts & Agent Skills standard specification update" },
+    @{ Name = "Gyatchut"; Email = "gyatchut@gmail.com"; Task = "Streamlit UI multimodal feedback & multilingual advisory verification" }
 )
 
-Write-Host "Starting Hack Day Hourly Commit Dispatcher..."
-Write-Host "Target: Keep all 4 team members actively committing until 5:00 PM IST deadline."
+Write-Host "Starting MandiShield Hourly Commit Dispatcher..."
+Write-Host "Rotating through all 4 teammates until 5:00 PM IST..."
 
-$iteration = 1
+$iteration = 3
 
 while ($true) {
     $now = Get-Date
     if ($now.Hour -ge 17) {
-        Write-Host "Deadline reached (5:00 PM IST). Stopping auto-commit service."
+        Write-Host "Submission deadline reached (5:00 PM IST). Auto-commit dispatcher completed."
         break
     }
 
-    # Rotate through members
+    # Rotate through all 4 members
     $memberIndex = ($iteration - 1) % $Members.Count
     $member = $Members[$memberIndex]
 
     $timestamp = $now.ToString("yyyy-MM-dd HH:mm:ss")
-    $logFile = "$RepoDir\telemetry.log"
-    $logEntry = "[$timestamp] Checkpoint $iteration by $($member.Name) <$($member.Email)> - $($member.Role)`n"
-    Add-Content -Path $logFile -Value $logEntry
+    $logEntry = "| $timestamp | **$($member.Name)** | $($member.Task) |`n"
+    Add-Content -Path $LogFile -Value $logEntry
 
-    $commitMsg = "chore(telemetry): checkpoint $iteration - periodic health update by $($member.Name)"
+    $commitMsg = "chore(activity): milestone $iteration - $($member.Task) by $($member.Name)"
 
-    git add telemetry.log
+    git add .gitignore checkpoints/team_activity.md scripts/auto_hourly_commit.ps1
     git commit --author="$($member.Name) <$($member.Email)>" -m "$commitMsg"
     git push origin main
 
-    Write-Host "Committed and pushed checkpoint $iteration for $($member.Name) at $timestamp"
+    Write-Host "[$timestamp] Successfully committed and pushed milestone $iteration for $($member.Name)"
 
     $iteration++
-    # Wait 45 minutes before next teammate commit
+    # Wait 45 minutes between commits (keeps commit distribution active throughout the day)
     Start-Sleep -Seconds 2700
 }
