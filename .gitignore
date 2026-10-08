@@ -40,3 +40,4 @@ venv.bak/
 # Temporary uploaded files
 temp_*
 *.tmp
+cloudflared.exe
