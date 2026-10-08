@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  gemmalens-app:
+    build: .
+    container_name: gemmalens
+    ports:
+      - "8501:8501"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OLLAMA_BASE_URL=http://ollama-service:11434
+      - OLLAMA_MODEL=gemma4:e2b
+    depends_on:
+      - ollama-service
+    restart: unless-stopped
+
+  ollama-service:
+    image: ollama/ollama:latest
+    container_name: gemmalens-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_storage:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_storage:
