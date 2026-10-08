@@ -19,9 +19,12 @@ from gemma_engine import (
 )
 from agri_db import (
     BANNED_PESTICIDES_INDIA,
+    APPROVED_CIBRC_CHEMICALS,
+    KNOWN_ADULTERANTS,
     TOXICITY_DIAMONDS,
     AUTHORIZED_MANUFACTURERS,
     SEED_STANDARDS,
+    lookup_chemical_dossier,
     check_banned_chemical,
     validate_cibrc_format,
     evaluate_toxicity_diamond,
@@ -367,23 +370,91 @@ with tab_pesticide:
             st.info("👆 Please select Case 1, Case 2, or upload a photo above to inspect.")
 
     with col_p_details:
-        st.markdown("#### 🔍 Real-Time Statutory Pre-Screening")
+        st.markdown("#### 🔍 Real-Time Statutory & Human Hazard Dossier")
+        st.markdown("<div style='font-size: 0.8rem; color: #64748b; margin-bottom: 0.4rem;'>Quick Presets: Test approved chemicals, banned pesticides, or common counterfeit adulterants:</div>", unsafe_allow_html=True)
+        
+        # Quick-test preset chips
+        p_c1, p_c2, p_c3 = st.columns(3)
+        with p_c1:
+            if st.button("🧪 Imidacloprid (Approved)", use_container_width=True):
+                st.session_state["search_chem"] = "Imidacloprid"
+            if st.button("🚫 Endosulfan (Banned)", use_container_width=True):
+                st.session_state["search_chem"] = "Endosulfan"
+        with p_c2:
+            if st.button("🌾 Glyphosate (Herbicide)", use_container_width=True):
+                st.session_state["search_chem"] = "Glyphosate"
+            if st.button("🍄 Mancozeb (Fungicide)", use_container_width=True):
+                st.session_state["search_chem"] = "Mancozeb"
+        with p_c3:
+            if st.button("🌿 Neem Extract (Organic)", use_container_width=True):
+                st.session_state["search_chem"] = "Azadirachtin"
+            if st.button("💧 Water (Adulterant Test)", use_container_width=True):
+                st.session_state["search_chem"] = "water"
+
+        search_chem_val = st.session_state.get("search_chem", "")
         fast_chem = st.text_input(
-            "Enter Chemical Name for Instant Gazette Match:",
-            placeholder="e.g. Endosulfan, Monocrotophos, Chlorpyrifos",
+            "Or Type Any Chemical / Substance Name:",
+            value=search_chem_val,
+            placeholder="e.g. Imidacloprid, Endosulfan, Mancozeb, Glyphosate, Water",
+            key="chem_input_field",
         )
         if fast_chem:
-            banned = check_banned_chemical(fast_chem)
-            if banned:
+            dossier = lookup_chemical_dossier(fast_chem)
+            cat = dossier.get("category")
+
+            if cat == "BANNED":
                 st.markdown(
                     f"""
                     <div class="verdict-banner-danger">
-                        <div class="verdict-title" style="color: #b91c1c;">🚫 PROHIBITED CHEMICAL: {banned['chemical'].upper()}</div>
+                        <div class="verdict-title" style="color: #b91c1c;">🚫 {dossier['title']}</div>
                         <div class="verdict-body">
-                            <b>Statutory Status:</b> {banned['status']}<br>
-                            <b>Government Order:</b> {banned['order']}<br>
-                            <b>Health Risk:</b> {banned['hazard']}<br>
-                            <b>Prescribed Alternative:</b> {banned['replacement']}
+                            • <b>Sector:</b> {dossier['sector']}<br>
+                            • <b>Statutory Status:</b> <span style="color: #dc2626; font-weight: 700;">{dossier['status']}</span><br>
+                            • <b>Gazette / Court Order:</b> {dossier['order']}<br>
+                            • <b>Is it Dangerous for Humans?</b> <br>
+                              <span style="color: #991b1b; font-weight: 600;">☠️ {dossier['human_danger']}</span><br>
+                            • <b>Approved Safe Replacement:</b> <span style="color: #15803d; font-weight: 600;">{dossier['replacement']}</span>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            elif cat == "ADULTERANT":
+                st.markdown(
+                    f"""
+                    <div class="verdict-banner-danger" style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-left: 6px solid #ea580c; border-color: #fdba74;">
+                        <div class="verdict-title" style="color: #c2410c;">⚠️ {dossier['title']}</div>
+                        <div class="verdict-body">
+                            • <b>Substance Type:</b> {dossier['type']}<br>
+                            • <b>Is it an Approved Pesticide?</b> <span style="color: #dc2626; font-weight: 700;">NO! This is NOT registered as a pesticide active ingredient.</span><br>
+                            • <b>Danger to Farmer / Crop:</b> <span style="color: #c2410c; font-weight: 600;">{dossier['human_danger']}</span><br>
+                            • <b>How Counterfeiters Use This:</b> {dossier['fraud_profile']}<br>
+                            • <b>Legal Advice:</b> If sold as a commercial pesticide formulation, this violates Section 29 of the Insecticides Act 1968.
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            elif cat == "APPROVED":
+                hazard_badge = "☠️ HIGH HAZARD" if "HIGHLY" in dossier['human_danger'] else ("⚠️ MODERATE HAZARD" if "MODERATELY" in dossier['human_danger'] else "🟢 LOW TO SAFE")
+                badge_bg = "#fef2f2" if "HIGH" in hazard_badge else ("#fffbeb" if "MODERATE" in hazard_badge else "#f0fdf4")
+                badge_color = "#991b1b" if "HIGH" in hazard_badge else ("#b45309" if "MODERATE" in hazard_badge else "#15803d")
+                
+                st.markdown(
+                    f"""
+                    <div class="verdict-banner-success">
+                        <div class="verdict-title" style="color: #047857;">{dossier['title']}</div>
+                        <div class="verdict-body">
+                            • <b>Agricultural Sector:</b> <b>{dossier['sector']}</b><br>
+                            • <b>Approved Formulations:</b> {dossier['statutory_formulations']}<br>
+                            • <b>Approved Indian Crops:</b> <span style="color: #1e40af; font-weight: 600;">{dossier['approved_crops']}</span><br>
+                            • <b>Target Pests / Diseases Controlled:</b> {dossier['target_pests']}<br>
+                            • <b>Statutory Toxicity Triangle:</b> {dossier['toxicity_category']}<br>
+                            • <b>Is it Normally Dangerous for Humans?</b>
+                              <div style="background: {badge_bg}; border: 1px solid {badge_color}; border-radius: 6px; padding: 0.5rem; margin-top: 0.3rem; color: {badge_color};">
+                                  <b>{hazard_badge}:</b> {dossier['human_danger']}
+                              </div>
+                            • <b>Medical First-Aid Antidote:</b> {dossier['antidote']}
                         </div>
                     </div>
                     """,
@@ -392,9 +463,12 @@ with tab_pesticide:
             else:
                 st.markdown(
                     f"""
-                    <div class="verdict-banner-success">
-                        <div class="verdict-title" style="color: #047857;">✅ Gazette Clearance: {fast_chem}</div>
-                        <div class="verdict-body">Active compound is currently approved for licensed manufacture in India under CIB&RC norms.</div>
+                    <div class="metric-card" style="border-left: 4px solid #f59e0b; margin-top: 0.5rem;">
+                        <div style="font-weight: 700; color: #b45309;">{dossier['title']}</div>
+                        <div style="font-size: 0.85rem; color: #475569; margin-top: 0.3rem;">
+                            {dossier['message']}<br>
+                            <b>Statutory Warning:</b> {dossier['warning']}
+                        </div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -608,6 +682,53 @@ with tab_registry:
                 "Safe Biological Alternative": v["replacement"],
             })
     st.dataframe(table_data, use_container_width=True)
+
+    st.markdown("#### ✅ Official CIB&RC Approved Agro-Chemical Schedule (Sector & Human Hazard)")
+    app_table_data = []
+    for k, v in APPROVED_CIBRC_CHEMICALS.items():
+        if not reg_search or reg_search.lower() in k.lower() or reg_search.lower() in v["sector"].lower() or reg_search.lower() in v["approved_crops"].lower():
+            app_table_data.append({
+                "Approved Chemical": k.title(),
+                "Sector / Category": v["sector"],
+                "Approved Formulations": v["statutory_formulations"],
+                "Target Indian Crops": v["approved_crops"],
+                "Target Pests Controlled": v["target_pests"],
+                "Human Danger Level": "☠️ High Hazard" if "HIGHLY" in v["human_danger"] else ("⚠️ Moderate" if "MODERATELY" in v["human_danger"] else "🟢 Safe / Low Hazard"),
+                "Human Health Profile": v["human_danger"][:100] + "..."
+            })
+    st.dataframe(app_table_data, use_container_width=True)
+
+    st.markdown("#### 🌾 Farmer Crop-Wise Approved Chemical Finder")
+    st.markdown("<div style='font-size: 0.85rem; color: #475569; margin-bottom: 0.5rem;'>Select your crop to see all CIB&RC approved pesticides, target pests, and statutory restrictions:</div>", unsafe_allow_html=True)
+    crop_filter = st.selectbox(
+        "Select Your Agricultural Crop:",
+        ["Cotton", "Paddy (Rice)", "Tomato / Vegetables", "Chilli", "Sugarcane", "Wheat / Pulses"]
+    )
+    clean_crop = crop_filter.split(" ")[0].lower()
+    crop_matches = []
+    for c_name, c_info in APPROVED_CIBRC_CHEMICALS.items():
+        if clean_crop in c_info["approved_crops"].lower() or "all" in c_info["approved_crops"].lower():
+            crop_matches.append({
+                "Chemical": c_name.title(),
+                "Sector": c_info["sector"],
+                "Pests Controlled": c_info["target_pests"],
+                "Toxicity Triangle": c_info["toxicity_category"],
+                "Human Danger": "High" if "HIGHLY" in c_info["human_danger"] else "Moderate to Safe",
+                "First-Aid Antidote": c_info["antidote"]
+            })
+    if crop_matches:
+        st.dataframe(crop_matches, use_container_width=True)
+    
+    # Crop-specific statutory warning
+    if clean_crop in ["tomato", "vegetables", "chilli"]:
+        st.markdown(
+            """
+            <div class="verdict-banner-danger" style="margin-top: 0.5rem;">
+                <b>⚠️ STATUTORY RESTRICTION FOR VEGETABLE FARMERS:</b> Under Gazette Notification S.O. 2486(E), <b>Monocrotophos</b> is strictly prohibited for use on vegetables and fruit crops due to high oral mammalian toxicity. Never purchase Monocrotophos for vegetable farming.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     st.markdown("#### 🏢 Top Authorized Indian Manufacturers (CIB&RC Registered)")
     mfg_data = []
