@@ -71,129 +71,209 @@ st.markdown(
         color: #1e293b;
     }
 
-    /* Top Brand Navigation */
+    /* Liquid Glass Glow Animations */
+    @keyframes liquidMesh {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    @keyframes pulseGlow {
+        0%, 100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.35); }
+        50% { box-shadow: 0 0 22px rgba(16, 185, 129, 0.75), 0 0 4px rgba(16, 185, 129, 0.9); }
+    }
+    @keyframes shimmerMove {
+        0% { transform: translateX(-150%); }
+        100% { transform: translateX(250%); }
+    }
+
+    /* Liquid Glass Brand Navigation Header */
     .brand-container {
+        position: relative;
+        overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 1.25rem 1.75rem;
-        background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
-        border-radius: 14px;
+        padding: 1.35rem 1.85rem;
+        background: linear-gradient(135deg, rgba(6, 78, 59, 0.96) 0%, rgba(13, 148, 136, 0.92) 55%, rgba(5, 150, 105, 0.96) 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 16px;
         color: white;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 10px 25px -5px rgba(6, 78, 59, 0.2);
+        margin-bottom: 1.35rem;
+        box-shadow: 0 20px 40px -15px rgba(6, 78, 59, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    }
+    .brand-container::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; width: 45%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+        transform: skewX(-25deg);
+        animation: shimmerMove 8s infinite linear;
     }
     .brand-title {
-        font-size: 1.85rem;
+        font-size: 1.95rem;
         font-weight: 800;
-        letter-spacing: -0.025em;
+        letter-spacing: -0.03em;
         margin: 0;
         display: flex;
         align-items: center;
-        gap: 0.6rem;
+        gap: 0.65rem;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
     }
     .brand-subtitle {
-        font-size: 0.95rem;
+        font-size: 0.92rem;
         color: #a7f3d0;
-        margin-top: 0.25rem;
+        margin-top: 0.3rem;
         font-weight: 400;
+        letter-spacing: 0.01em;
     }
     .brand-tag {
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(8px);
-        padding: 0.4rem 0.85rem;
+        background: rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 0.45rem 0.95rem;
         border-radius: 9999px;
-        font-size: 0.78rem;
+        font-size: 0.8rem;
         font-weight: 600;
-        border: 1px solid rgba(255, 255, 255, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.32);
         display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
+        gap: 0.45rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .pulse-dot {
+        width: 8px;
+        height: 8px;
+        background-color: #34d399;
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulseGlow 2s infinite ease-in-out;
     }
 
-    /* Modern Card Layouts */
+    /* Liquid Glassmorphic Cards */
     .metric-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 1.2rem;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-        transition: transform 0.2s, box-shadow 0.2s;
+        background: rgba(255, 255, 255, 0.82);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(226, 232, 240, 0.85);
+        border-radius: 14px;
+        padding: 1.25rem;
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(255, 255, 255, 0.95) inset;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
     }
     .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px -3px rgba(0, 0, 0, 0.08);
+        transform: translateY(-3px) scale(1.004);
+        box-shadow: 0 14px 28px -4px rgba(16, 185, 129, 0.14), 0 0 0 1px rgba(16, 185, 129, 0.35) inset;
+        border-color: rgba(16, 185, 129, 0.4);
     }
     .metric-label {
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.06em;
         color: #64748b;
         font-weight: 600;
-        margin-bottom: 0.3rem;
+        margin-bottom: 0.35rem;
     }
     .metric-value {
         font-size: 1.45rem;
-        font-weight: 700;
+        font-weight: 800;
         color: #0f172a;
+        letter-spacing: -0.02em;
     }
 
-    /* Status Banners */
+    /* Liquid Frosted Status Banners */
     .verdict-banner-danger {
-        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-        border: 1px solid #fecaca;
+        background: rgba(254, 242, 242, 0.88);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(239, 68, 68, 0.28);
         border-left: 6px solid #ef4444;
-        border-radius: 10px;
-        padding: 1rem 1.4rem;
-        margin: 1rem 0;
+        border-radius: 14px;
+        padding: 1.2rem 1.6rem;
+        margin: 1.2rem 0;
+        box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.85) inset;
     }
     .verdict-banner-success {
-        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-        border: 1px solid #bbf7d0;
+        background: rgba(240, 253, 244, 0.88);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(16, 185, 129, 0.28);
         border-left: 6px solid #10b981;
-        border-radius: 10px;
-        padding: 1rem 1.4rem;
-        margin: 1rem 0;
+        border-radius: 14px;
+        padding: 1.2rem 1.6rem;
+        margin: 1.2rem 0;
+        box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.85) inset;
     }
     .verdict-title {
-        font-size: 1.15rem;
-        font-weight: 700;
+        font-size: 1.18rem;
+        font-weight: 800;
         margin: 0;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.55rem;
     }
     .verdict-body {
-        font-size: 0.9rem;
-        margin-top: 0.35rem;
+        font-size: 0.92rem;
+        margin-top: 0.45rem;
         color: #334155;
-        line-height: 1.45;
+        line-height: 1.55;
     }
 
-    /* Sample Selector Pill */
-    .sample-pill {
-        border: 1px solid #cbd5e1;
-        border-radius: 8px;
-        padding: 0.85rem;
-        background: #f8fafc;
-        margin-bottom: 0.75rem;
-        cursor: pointer;
+    /* Glass Styled Streamlit Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 6px;
+        background: rgba(241, 245, 249, 0.85);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        padding: 6px;
+        border-radius: 14px;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02) inset;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 10px;
+        padding: 8px 18px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.25s ease;
+    }
+    .stTabs [aria-selected="true"] {
+        background: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+        color: #065f46 !important;
+    }
+
+    /* Glass Styled Buttons */
+    .stButton > button {
+        border-radius: 12px;
+        font-weight: 600;
+        padding: 0.55rem 1.2rem;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(203, 213, 225, 0.7);
+        backdrop-filter: blur(8px);
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px -4px rgba(0, 0, 0, 0.12);
     }
 
     /* Letterhead styling */
     .letterhead {
-        background: #ffffff;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
         border: 2px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 2rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border-radius: 12px;
+        padding: 2.2rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
         font-family: 'Times New Roman', Times, serif;
     }
     .letterhead-header {
         text-align: center;
         border-bottom: 2px solid #0f172a;
-        padding-bottom: 1rem;
-        margin-bottom: 1.5rem;
+        padding-bottom: 1.1rem;
+        margin-bottom: 1.6rem;
     }
 </style>
 """,
@@ -209,7 +289,7 @@ st.markdown(
         <div class="brand-subtitle">Autonomous Agro-Chemical Forensic Inspection System • Indian Agricultural Quality Council</div>
     </div>
     <div style="text-align: right;">
-        <span class="brand-tag">⚡ Powered by Google Gemma 4</span>
+        <span class="brand-tag"><span class="pulse-dot"></span> ⚡ Powered by Google Gemma 4 (26B MoE)</span>
         <div style="font-size: 0.75rem; color: #d1fae5; margin-top: 0.35rem;">Statutory CIB&RC & Seeds Act 1966 Standard Engine</div>
     </div>
 </div>
