@@ -1,7 +1,7 @@
 """
 GemmaLens: Multimodal AI System & Code Auditor
 Author: Gyatchut (gyatchut@gmail.com)
-Powered by: Google Gemma 4 (26B MoE - 4B Active)
+Powered by: Google Gemma 4 (26B MoE - 4B Active) / Local Gemma (Ollama)
 License: Apache-2.0
 """
 
@@ -10,7 +10,7 @@ import tempfile
 import streamlit as st
 from PIL import Image
 
-from gemma_engine import GemmaEngine, DEFAULT_MODEL
+from gemma_engine import GemmaEngine, DEFAULT_MODEL, DEFAULT_OLLAMA_MODEL, DEFAULT_OLLAMA_URL
 from prompts import ARCHITECTURE_AUDIT_PROMPT, CODE_SECURITY_PROMPT, AGENT_SKILL_META_PROMPT
 from agent_skills import AgentSkillPackage
 
@@ -54,35 +54,57 @@ st.markdown("""
 st.markdown('<div class="main-header">🔍 GemmaLens: Multimodal System & Code Auditor</div>', unsafe_allow_html=True)
 st.markdown("""
 <div>
-    <span class="badge-pill">🧠 Model: Gemma 4 (26B MoE)</span>
+    <span class="badge-pill">🧠 Model: Gemma 4 (26B MoE & Ollama)</span>
     <span class="badge-pill">📄 License: Apache-2.0 Open Weights</span>
     <span class="badge-pill">🧩 Standard: Agent Skills Open Standard</span>
     <span class="badge-pill">⚡ Hacktoberfest Hack Day Coimbatore</span>
 </div>
 <div class="sub-header">
-    An intelligent, multimodal copilot that ingests architecture diagrams, audits infrastructure for single points of failure, deep-reasons over low-level code, and packages reusable Agent Skills.
+    An open-source multimodal developer copilot that ingests architecture diagrams, audits infrastructure for single points of failure, deep-reasons over low-level code, and packages reusable Agent Skills.
 </div>
 """, unsafe_allow_html=True)
 
 # Sidebar Configuration
-st.sidebar.title("⚙️ Engine Configuration")
+st.sidebar.title("⚙️ Engine & Inference Mode")
 
-api_key = st.sidebar.text_input(
-    "Google AI Studio API Key",
-    type="password",
-    value=os.environ.get("GEMINI_API_KEY", ""),
-    help="Get a free key at https://aistudio.google.com/apikey"
-)
-
-model_choice = st.sidebar.selectbox(
-    "Active Model",
-    options=["gemma-4-26b-a4b-it", "gemma-4-31b-it"],
+backend_choice = st.sidebar.radio(
+    "Inference Backend",
+    options=["Hosted Gemini API (Gemma 4 MoE)", "Local Offline (Ollama)"],
     index=0,
-    help="gemma-4-26b-a4b-it is the 26B Mixture-of-Experts model with 4B active parameters."
+    help="Hosted API provides full 26B MoE & Multimodal vision. Local Ollama runs 100% offline."
 )
 
-thinking_mode = st.sidebar.toggle("Enable Deep Thinking Mode", value=True)
-thinking_level = "high" if thinking_mode else "minimal"
+is_local = "Ollama" in backend_choice
+
+api_key = ""
+model_choice = "gemma-4-26b-a4b-it"
+ollama_model = DEFAULT_OLLAMA_MODEL
+ollama_url = DEFAULT_OLLAMA_URL
+
+if not is_local:
+    api_key = st.sidebar.text_input(
+        "Google AI Studio API Key",
+        type="password",
+        value=os.environ.get("GEMINI_API_KEY", ""),
+        help="Get a free key at https://aistudio.google.com/apikey"
+    )
+    model_choice = st.sidebar.selectbox(
+        "Active Gemma Model",
+        options=["gemma-4-26b-a4b-it", "gemma-4-31b-it"],
+        index=0,
+        help="gemma-4-26b-a4b-it is the 26B Mixture-of-Experts model with 4B active parameters."
+    )
+    thinking_mode = st.sidebar.toggle("Enable Deep Thinking Mode", value=True)
+    thinking_level = "high" if thinking_mode else "minimal"
+else:
+    ollama_url = st.sidebar.text_input("Ollama Server URL", value=DEFAULT_OLLAMA_URL)
+    ollama_model = st.sidebar.text_input("Ollama Model Name", value=DEFAULT_OLLAMA_MODEL)
+    thinking_level = "minimal"
+    ollama_live = GemmaEngine.is_ollama_available(ollama_url)
+    if ollama_live:
+        st.sidebar.success("🟢 Local Ollama Server Detected!")
+    else:
+        st.sidebar.warning("🟡 Ollama server not detected. Run `ollama serve` if running locally.")
 
 st.sidebar.divider()
 st.sidebar.markdown("""
@@ -99,13 +121,16 @@ st.sidebar.markdown("""
 
 # Initialize Engine
 engine = None
-if api_key:
-    try:
-        engine = GemmaEngine(api_key=api_key, model=model_choice)
-    except Exception as e:
-        st.sidebar.error(f"Initialization error: {e}")
-else:
-    st.info("👋 Welcome! Please enter your Google AI Studio API key in the sidebar to begin.")
+try:
+    if not is_local:
+        if api_key:
+            engine = GemmaEngine(api_key=api_key, model=model_choice, backend="gemini_api")
+        else:
+            st.info("👋 Welcome! Please enter your Google AI Studio API key in the sidebar to begin, or switch to Local Ollama.")
+    else:
+        engine = GemmaEngine(backend="ollama", ollama_url=ollama_url, ollama_model=ollama_model)
+except Exception as e:
+    st.sidebar.error(f"Initialization error: {e}")
 
 # Tabs
 tab1, tab2, tab3, tab4 = st.tabs([
@@ -277,7 +302,7 @@ with tab4:
     | **01** | **Build During Hack Day** | Built fresh during the event with incremental git commits. |
     | **02** | **Show Your Progress** | Clean commit history featuring all 4 team members with verified emails. |
     | **03** | **Team of 4** | Exactly 4 teammates (Dhanwinn, Avanish, Shasank, Gyatchut). |
-    | **04** | **Original Work** | Powered by open-weight Gemma 4 using official Google GenAI SDK. |
+    | **04** | **Original Work** | Powered by open-weight Gemma 4 using official Google GenAI SDK & Ollama. |
     | **05** | **Working Build Required** | Fully interactive live Streamlit web application. |
     | **06** | **Submit On Time** | Prepared for OrganizerHQ submission ahead of 5:00 PM IST. |
     | **07** | **Keep It Clear** | Complete README with Setup, Dependencies, and Usage. |
@@ -288,7 +313,8 @@ with tab4:
     st.divider()
     st.markdown("""
     ### 🤖 Model Attribution & Terms
-    - **Model:** `gemma-4-26b-a4b-it` (Google DeepMind)
+    - **Hosted Model:** `gemma-4-26b-a4b-it` (Google DeepMind) via Gemini API
+    - **Local Offline Model:** `gemma4:e2b` / `gemma2:2b` via Ollama
     - **Parameters:** 26 Billion Total (4 Billion Active via Mixture-of-Experts)
     - **License:** Apache 2.0 Open Weights
     - **Provider Terms:** [Google Gemma Terms](https://ai.google.dev/gemma/terms)
