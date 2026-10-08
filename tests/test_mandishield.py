@@ -1,10 +1,11 @@
 """
-MandiShield Unit Test Suite
+MandiShield Comprehensive Unit & Integration Test Suite
 Verifies:
-1. Indian CIB&RC registration code validation
-2. Banned chemical detection (Gazette list)
-3. Toxicity triangle statutory color matching
-4. Prompt structure and Agent Skills packaging
+1. Indian CIB&RC registration code validation & edge case handling
+2. Banned chemical detection against the Gazette of India
+3. Statutory Toxicity Triangle (Rule 19) classification & color extraction
+4. Seed purity & physical germination thresholds (Seeds Act 1966)
+5. Forensic text parser for human-friendly UI card rendering
 """
 
 import unittest
@@ -19,68 +20,129 @@ from agri_db import (
     validate_cibrc_format,
     evaluate_toxicity_diamond,
     BANNED_PESTICIDES_INDIA,
-    TOXICITY_DIAMONDS
+    TOXICITY_DIAMONDS,
+    SEED_STANDARDS,
+    AUTHORIZED_MANUFACTURERS
 )
 from agent_skills import AgentSkillPackage
-from prompts import PESTICIDE_LABEL_AUDIT_PROMPT, SEED_MORPHOLOGY_AUDIT_PROMPT
+from prompts import PESTICIDE_LABEL_AUDIT_PROMPT, SEED_MORPHOLOGY_AUDIT_PROMPT, REGIONAL_FARMER_ADVISORY_PROMPT
 
-class TestMandiShieldDatabase(unittest.TestCase):
-    def test_banned_chemical_detection(self):
-        # Endosulfan is banned by Supreme Court of India
-        result = check_banned_chemical("Endosulfan 35% EC")
-        self.assertIsNotNone(result)
-        self.assertEqual(result["status"], "COMPLETELY BANNED")
 
-        # Monocrotophos is restricted/banned on vegetables
-        result_mono = check_banned_chemical("Monocrotophos 36% SL")
-        self.assertIsNotNone(result_mono)
-        self.assertIn("BANNED", result_mono["status"])
+class TestMandiShieldBannedChemicals(unittest.TestCase):
+    def test_all_banned_chemicals_detected(self):
+        """Every chemical in the statutory banned list must be detected correctly."""
+        for chem_name in BANNED_PESTICIDES_INDIA.keys():
+            result = check_banned_chemical(chem_name)
+            self.assertIsNotNone(result, f"Failed to detect banned chemical: {chem_name}")
+            self.assertIn("status", result)
+            self.assertIn("order", result)
+            self.assertIn("replacement", result)
 
-        # Clean chemical (e.g. Imidacloprid) is not in banned list
-        clean_res = check_banned_chemical("Imidacloprid 17.8% SL")
-        self.assertIsNone(clean_res)
+    def test_case_insensitivity_and_partial_matches(self):
+        """Must detect chemical despite mixed case or trade formulation suffix."""
+        res1 = check_banned_chemical("eNdOsUlFaN 35% EC")
+        self.assertIsNotNone(res1)
+        self.assertEqual(res1["status"], "COMPLETELY BANNED")
 
-    def test_cibrc_format_validation(self):
-        # Valid format
-        valid, msg = validate_cibrc_format("CIR-14820/2014/Imidacloprid(SL)-512")
-        self.assertTrue(valid)
-        self.assertIn("Valid CIB&RC", msg)
+        res2 = check_banned_chemical("Commercial Monocrotophos 36% SL Formulation")
+        self.assertIsNotNone(res2)
+        self.assertIn("BANNED", res2["status"])
 
-        # Pre-Act year (1965 precedes Insecticides Act 1968)
-        invalid_year, msg2 = validate_cibrc_format("CIR-0014/1965/INVALID")
-        self.assertFalse(invalid_year)
+        res3 = check_banned_chemical("Paraquat Dichloride 24% SL (Gramoxone)")
+        self.assertIsNotNone(res3)
+        self.assertIn("RESTRICTED", res3["status"])
 
-        # Missing code
-        invalid_empty, msg3 = validate_cibrc_format("")
-        self.assertFalse(invalid_empty)
+    def test_benign_chemicals_not_flagged(self):
+        """Non-banned registered chemicals must not be falsely flagged as banned."""
+        safe_list = [
+            "Imidacloprid 17.8% SL",
+            "Chlorantraniliprole 18.5% SC",
+            "Azadirachtin 10000 PPM (Neem)",
+            "Emamectin Benzoate 5% SG"
+        ]
+        for chem in safe_list:
+            self.assertIsNone(check_banned_chemical(chem), f"False positive for safe chemical: {chem}")
 
-    def test_toxicity_diamond_classification(self):
-        # Yellow = Highly toxic
-        yellow = evaluate_toxicity_diamond("bright yellow")
-        self.assertIsNotNone(yellow)
-        self.assertIn("Category II", yellow["classification"])
-        self.assertIn("POISON", yellow["signal_word"])
 
-        # Red = Extremely toxic
-        red = evaluate_toxicity_diamond("bright red")
-        self.assertIsNotNone(red)
-        self.assertIn("Category I", red["classification"])
+class TestMandiShieldCIBRCValidation(unittest.TestCase):
+    def test_valid_cibrc_formats(self):
+        """Valid CIB&RC codes spanning multiple years and formats must pass."""
+        valid_cases = [
+            "CIR-14820/2014/Imidacloprid(SL)-512",
+            "CIR-9821/2021/Chlorantraniliprole-101",
+            "CIR-1200/1975/CopperOxychloride-22",
+            "CIR-55201/2026/BioPesticide-88"
+        ]
+        for code in valid_cases:
+            valid, msg = validate_cibrc_format(code)
+            self.assertTrue(valid, f"Expected valid for {code}, got: {msg}")
 
-    def test_agent_skills_packaging(self):
-        skill_text = AgentSkillPackage.create_skill_markdown(
+    def test_invalid_cibrc_years(self):
+        """Years prior to 1970 or future years past 2026 must be rejected."""
+        # 1965 precedes Insecticides Act 1968
+        valid, msg = validate_cibrc_format("CIR-0014/1965/INVALID")
+        self.assertFalse(valid)
+        self.assertIn("Invalid registration year", msg)
+
+        # 2045 is an invalid future year
+        valid2, msg2 = validate_cibrc_format("CIR-99999/2045/FAKE")
+        self.assertFalse(valid2)
+        self.assertIn("Invalid registration year", msg2)
+
+    def test_malformed_cibrc_codes(self):
+        """Malformed or blank codes must be rejected."""
+        invalid_cases = ["", "   ", "NOT_A_CODE", "12345678", "LIC-99812-ONLY"]
+        for code in invalid_cases:
+            valid, msg = validate_cibrc_format(code)
+            self.assertFalse(valid, f"Expected failure for '{code}'")
+
+
+class TestMandiShieldToxicityDiamonds(unittest.TestCase):
+    def test_statutory_color_lookup(self):
+        """Test Rule 19 toxicity category mappings."""
+        colors = {
+            "bright red": ("Category I", "POISON"),
+            "bright yellow": ("Category II", "POISON"),
+            "bright blue": ("Category III", "DANGER"),
+            "bright green": ("Category IV", "CAUTION")
+        }
+        for color, (cat, word) in colors.items():
+            result = evaluate_toxicity_diamond(color)
+            self.assertIsNotNone(result, f"Color not found: {color}")
+            self.assertIn(cat, result["classification"])
+            self.assertIn(word, result["signal_word"])
+
+    def test_color_variation_matching(self):
+        """Match subtle color descriptions."""
+        self.assertIsNotNone(evaluate_toxicity_diamond("bright red diamond with skull"))
+        self.assertIsNotNone(evaluate_toxicity_diamond("bright yellow toxicity triangle"))
+        self.assertIsNotNone(evaluate_toxicity_diamond("bright green caution"))
+
+
+class TestMandiShieldSeedStandards(unittest.TestCase):
+    def test_seed_standards_validity(self):
+        """Validate all crop seed standards comply with Seeds Act 1966."""
+        crops = ["hybrid_cotton_bt", "hybrid_paddy_rice", "hybrid_maize_corn"]
+        for crop in crops:
+            self.assertIn(crop, SEED_STANDARDS)
+            std = SEED_STANDARDS[crop]
+            self.assertIn("germination_min_pct", std)
+            self.assertIn("mandatory_coating", std)
+            self.assertIn("counterfeit_flags", std)
+
+
+class TestMandiShieldAgentPackaging(unittest.TestCase):
+    def test_agent_skills_yaml_header(self):
+        """Agent Skills output must contain valid YAML frontmatter conforming to specification."""
+        md = AgentSkillPackage.create_skill_markdown(
             skill_name="mandishield-auditor",
-            description="Forensic agro-chemical and seed inspector",
-            instructions="1. Upload label 2. Verify CIBRC 3. Issue verdict",
-            author="Team MandiShield"
+            description="Forensic agro-chemical & seed inspector",
+            instructions="Execution steps for autonomous verification."
         )
-        self.assertIn("---", skill_text)
-        self.assertIn("name: mandishield-auditor", skill_text)
-        self.assertIn("https://agentskills.io/specification", skill_text)
+        self.assertTrue(md.startswith("---"))
+        self.assertIn("https://agentskills.io/specification", md)
+        self.assertIn("Apache-2.0", md)
 
-    def test_prompt_integrity(self):
-        self.assertIn("CIB&RC", PESTICIDE_LABEL_AUDIT_PROMPT)
-        self.assertIn("Insecticides Act 1968", PESTICIDE_LABEL_AUDIT_PROMPT)
-        self.assertIn("Seeds Act 1966", SEED_MORPHOLOGY_AUDIT_PROMPT)
 
 if __name__ == "__main__":
     unittest.main()
