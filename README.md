@@ -99,11 +99,9 @@ The entire GemmaLens project was designed, implemented, and verified during Hack
 
 ## Working Application
 
-**Live Application:** [https://curvy-socks-search.loca.lt](https://curvy-socks-search.loca.lt)
+**Live Application:** [https://female-memories-ads-desktops.trycloudflare.com](https://female-memories-ads-desktops.trycloudflare.com)
 
-*(Bypass password / Tunnel IP if prompted: `202.88.252.190`)*
-
-The application is fully functional and accessible online. Users and judges can upload diagrams, audit C code, and export Agent Skills directly in their browser.
+The application is deployed live with zero setup required. Judges can click the link from any phone or browser to test Gemma 4's architecture audit and code reasoning tools live.
 
 ## Demo Video
 
