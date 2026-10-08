@@ -2,3 +2,4 @@ google-genai>=0.1.1
 streamlit>=1.35.0
 pillow>=10.0.0
 pydantic>=2.0.0
+gTTS>=2.5.0
