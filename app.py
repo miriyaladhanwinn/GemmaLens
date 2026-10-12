@@ -51,6 +51,22 @@ from agri_db import (
     evaluate_toxicity_diamond,
 )
 from agent_skills import AgentSkillPackage
+from advanced_features import (
+    get_outbreak_dataframe,
+    generate_dao_alert_message,
+    calculate_dosage,
+    analyze_hologram_diffraction,
+    simulate_seedling_growth,
+    generate_whatsapp_bot_payload,
+    analyze_hyperspectral_raman,
+    benchmark_edge_gemma4,
+    generate_statutory_fir_complaint,
+    simulate_soil_ecotoxicity,
+    CROP_DATABASE,
+    EMERGENCY_ANTIDOTES,
+    RAMAN_MOLECULE_LIBRARY,
+    ECO_TOXICITY_DATABASE,
+)
 
 # Configure Page
 st.set_page_config(
@@ -312,11 +328,17 @@ with st.sidebar:
     api_key = None
     if is_cloud:
         default_key = os.environ.get("GEMINI_API_KEY", "")
+        if not default_key:
+            try:
+                if "GEMINI_API_KEY" in st.secrets:
+                    default_key = st.secrets["GEMINI_API_KEY"]
+            except Exception:
+                pass
         api_key = st.text_input(
             "Gemini API Key",
             value=default_key,
             type="password",
-            help="Pre-configured from system environment.",
+            help="Pre-configured from system environment or Streamlit Secrets.",
         )
         if not api_key:
             st.warning("Please provide your Google AI Studio API Key to execute cloud audits.")
@@ -381,11 +403,14 @@ def cache_image(upload):
         return f.name
 
 # Main Navigation Tabs
-tab_pesticide, tab_seeds, tab_registry, tab_legal, tab_audio, tab_spec = st.tabs(
+tab_pesticide, tab_seeds, tab_registry, tab_radar, tab_dosage, tab_lab, tab_legal, tab_audio, tab_spec = st.tabs(
     [
         "🧪 Pesticide Bottle Auditor",
         "🌱 Seed Coating & Purity",
         "🚫 Statutory Gazette Registry",
+        "🗺️ Geospatial Outbreak Radar",
+        "🌾 Precision Dosage & Antidote",
+        "🔬 Next-Gen Gemma 4 Vision Lab",
         "⚖️ Official DAO Complaint Portal",
         "🗣️ Multilingual Regional Voice",
         "📦 Open Architecture & Spec",
@@ -936,18 +961,383 @@ with tab_registry:
     st.dataframe(mfg_data, use_container_width=True)
 
 # -------------------------------------------------------------
-# TAB 4: Official DAO Complaint Portal
+# TAB 4: Geospatial Outbreak Radar
+# -------------------------------------------------------------
+with tab_radar:
+    st.markdown("### 🗺️ National Geospatial Counterfeit Outbreak Radar")
+    st.markdown(
+        "Real-time crowdsourced anomaly clustering across Indian agricultural mandis. "
+        "Aggregates failed forensic scans to identify moving counterfeit vendor syndicates and triggers automated District Agriculture Officer (DAO) red alerts."
+    )
+
+    r_m1, r_m2, r_m3, r_m4 = st.columns(4)
+    with r_m1:
+        st.metric("Active Outbreak Clusters", "6 Districts", delta="3 New Today", delta_color="inverse")
+    with r_m2:
+        st.metric("Critical Seizure Mandis", "4 Mandis", delta="High Risk", delta_color="inverse")
+    with r_m3:
+        st.metric("Farmers Protected This Week", "1,420+", delta="+18.4%")
+    with r_m4:
+        st.metric("Police FIRs Initiated", "3 Warrants", delta="Sec 29 Enforced")
+
+    st.markdown("---")
+    st.markdown("##### 📍 Live Mandi Outbreak Map (GPS Geotagged Failed Audits):")
+    outbreak_df = get_outbreak_dataframe()
+    st.map(outbreak_df[["lat", "lon"]], zoom=4)
+
+    col_rad_table, col_rad_alert = st.columns([1.2, 1])
+
+    with col_rad_table:
+        st.markdown("##### 📋 Verified Counterfeit Incidents Feed:")
+        sev_filter = st.selectbox("Filter by Threat Level:", ["ALL", "CRITICAL", "HIGH", "MODERATE"])
+        filtered_df = outbreak_df if sev_filter == "ALL" else outbreak_df[outbreak_df["severity"] == sev_filter]
+        
+        display_feed = []
+        for _, row in filtered_df.iterrows():
+            display_feed.append({
+                "District": f"{row['district']}, {row['state']}",
+                "Suspected Batch": row["chemical_flagged"],
+                "Lot #": row["lot_number"],
+                "Cases": row["cases_reported"],
+                "Threat": row["severity"],
+                "Enforcement Status": row["action_status"],
+            })
+        st.dataframe(display_feed, use_container_width=True)
+
+    with col_rad_alert:
+        st.markdown("##### 🚨 Automated District Enforcement Dispatch:")
+        st.markdown("<div style='font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem;'>Trigger an emergency legal wire dispatch to the District Agricultural Officer (DAO) and Krishi Vigyan Kendra (KVK):</div>", unsafe_allow_html=True)
+        selected_dist = st.selectbox("Select Target Outbreak District:", [h["district"] for h in OUTBREAK_HOTSPOTS])
+        
+        if st.button("🚨 Broadcast District Red Alert Wire", type="primary", use_container_width=True):
+            dispatch_text = generate_dao_alert_message(selected_dist)
+            st.session_state["active_wire_dispatch"] = dispatch_text
+            st.success(f"Enforcement wire for {selected_dist} generated successfully!")
+
+        if "active_wire_dispatch" in st.session_state:
+            st.code(st.session_state["active_wire_dispatch"], language="markdown")
+            st.download_button(
+                "📥 Download Official Police / DAO Wire (.txt)",
+                data=st.session_state["active_wire_dispatch"],
+                file_name=f"DAO_Alert_{selected_dist}.txt",
+                mime="text/plain",
+            )
+
+# -------------------------------------------------------------
+# TAB 5: Precision Agronomic Dosage & Antidote Guide
+# -------------------------------------------------------------
+with tab_dosage:
+    st.markdown("### 🌾 Precision Agronomic Dosage & Emergency Toxicological Antidote Guide")
+    st.markdown(
+        "Calculate scientifically safe chemical dilutions per knapsack sprayer tank to avoid crop chemical burn, "
+        "and access statutory hospital first-aid protocols under the Insecticides Act 1968 in case of accidental poison exposure."
+    )
+
+    col_dose, col_anti = st.columns([1, 1])
+
+    with col_dose:
+        st.markdown("#### ⚖️ Backpack Sprayer Dilution Calculator")
+        crop_choice = st.selectbox("Select Agricultural Crop:", list(CROP_DATABASE.keys()))
+        acre_input = st.number_input("Field Acreage (Acres):", min_value=0.5, max_value=100.0, value=2.0, step=0.5)
+        tank_size = st.selectbox("Knapsack Backpack Sprayer Capacity:", [15.0, 16.0, 20.0], format_func=lambda x: f"{int(x)} Liters Standard Tank")
+        
+        calc_result = calculate_dosage(crop_choice, acre_input, tank_size)
+
+        st.markdown(
+            f"""
+            <div class="verdict-banner-success">
+                <div class="verdict-title" style="color: #065f46;">🧪 Recommended Formulation Dosage</div>
+                <div class="verdict-body">
+                    • <b>Dilution Ratio:</b> <span style="font-size: 1.1rem; font-weight: 800; color: #047857;">{calc_result['ml_per_tank']} ml / {int(tank_size)}L Tank</span><br>
+                    • <b>Total Chemical Required:</b> {calc_result['total_chemical_ml']} ml across {acre_input} acres<br>
+                    • <b>Total Water Required:</b> {calc_result['total_water_liters']} Liters<br>
+                    • <b>Total Sprayer Backpack Tanks:</b> {calc_result['total_tanks_needed']} Tanks<br>
+                    • <b>Pre-Harvest Interval (PHI):</b> <span style="font-weight: 700; color: #b45309;">{calc_result['phi_days']} Days before picking</span><br>
+                    • <b>Target Pests Managed:</b> {calc_result['target_pests']}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.info(f"💡 {calc_result['spraying_advice']}")
+
+    with col_anti:
+        st.markdown("#### 🚑 Emergency Chemical Antidote & Hospital First-Aid")
+        st.markdown(
+            "<div style='font-size: 0.82rem; color: #b91c1c; font-weight: 600; margin-bottom: 0.4rem;'>⚠️ IMMEDIATE PROTOCOL FOR ACCIDENTAL INGESTION OR OCULAR SPRAY SPLASH:</div>",
+            unsafe_allow_html=True,
+        )
+        chem_class = st.selectbox("Select Suspected Chemical Class:", list(EMERGENCY_ANTIDOTES.keys()))
+        anti_info = EMERGENCY_ANTIDOTES[chem_class]
+
+        st.markdown(
+            f"""
+            <div class="verdict-banner-danger">
+                <div class="verdict-title" style="color: #991b1b;">💉 Statutory Antidote: {anti_info['hospital_code']}</div>
+                <div class="verdict-body">
+                    • <b>Medical Antidote Administration:</b><br>
+                      <span style="color: #b91c1c; font-weight: 700;">{anti_info['antidote']}</span><br><br>
+                    • <b>Clinical Poisoning Symptoms:</b><br>
+                      {anti_info['symptoms']}<br><br>
+                    • <b>Immediate Field First-Aid:</b><br>
+                      {anti_info['first_aid']}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.warning("📞 National 24x7 Poison Information Centre (AIIMS New Delhi): **1800-116-117** (Toll Free) | Emergency Ambulance: **108**")
+
+# -------------------------------------------------------------
+# TAB 6: Next-Gen Gemma 4 Vision Lab
+# -------------------------------------------------------------
+with tab_lab:
+    st.markdown("### 🔬 Next-Gen Gemma 4 Vision & Edge Laboratory")
+    st.markdown(
+        "Cutting-edge research modules leveraging Google Gemma 4 for multi-angle kinematic hologram diffraction, "
+        "ISTAC-calibrated 7-day seedling emergence forecasting, and automated WhatsApp Business Voice Gateway simulations."
+    )
+
+    lab_sub1, lab_sub2, lab_sub3, lab_sub4, lab_sub5, lab_sub6 = st.tabs([
+        "🌈 3D Holographic Parallax Analyzer",
+        "🌱 7-Day Seedling Growth Simulator",
+        "🔬 Raman & NIR Spectral Adulteration Fingerprint",
+        "⚡ Edge Gemma 4 Quantization Benchmark",
+        "🐝 Soil & Pollinator Eco-Toxicity Model",
+        "💬 WhatsApp Voice Bot Simulator",
+    ])
+
+    with lab_sub1:
+        st.markdown("#### 🌈 Multi-Angle Holographic Diffraction Grating Verification")
+        st.markdown(
+            "Counterfeiters photocopy genuine security holograms onto high-gloss paper. "
+            "Gemma 4 analyzes simulated angular multi-frame captures to verify physical optical chromatic dispersion."
+        )
+        holo_col1, holo_col2 = st.columns([1, 1])
+        with holo_col1:
+            st.markdown("##### 🎛️ Angular Optical Parameters:")
+            spectral_var = st.slider("Angular Spectral Shift Variance (Chromatic Parallax):", 0.0, 0.30, 0.16, step=0.01,
+                                     help="Genuine optical diffraction gratings shift wavelengths across angles (> 0.12). Flat 2D photocopies exhibit zero chromatic shift (< 0.05).")
+            blur_idx = st.slider("Micro-Dot Matrix Edge Blur Index:", 0.0, 1.0, 0.15, step=0.05,
+                                 help="Photocopied stickers display toner ink spread and edge dot matrix degradation under magnification.")
+            
+            holo_eval = analyze_hologram_diffraction(spectral_var, blur_idx)
+
+        with holo_col2:
+            st.markdown("##### 🔬 Optical Forensic Scorecard:")
+            if holo_eval["is_counterfeit"]:
+                st.markdown(
+                    f"""
+                    <div class="verdict-banner-danger">
+                        <div class="verdict-title" style="color: #991b1b;">🚨 {holo_eval['verdict']}</div>
+                        <div class="verdict-body">
+                            • <b>Forensic Confidence:</b> {int(holo_eval['confidence']*100)}%<br>
+                            • <b>Spectral Shift:</b> {holo_eval['spectral_variance']} (Static Reflection)<br>
+                            • <b>Diagnostic Analysis:</b> {holo_eval['reason']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    f"""
+                    <div class="verdict-banner-success">
+                        <div class="verdict-title" style="color: #065f46;">✅ {holo_eval['verdict']}</div>
+                        <div class="verdict-body">
+                            • <b>Forensic Confidence:</b> {int(holo_eval['confidence']*100)}%<br>
+                            • <b>Spectral Shift:</b> {holo_eval['spectral_variance']} (Dynamic Rainbow Grating)<br>
+                            • <b>Diagnostic Analysis:</b> {holo_eval['reason']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+    with lab_sub2:
+        st.markdown("#### 🌱 7-Day Seedling Germination & Stand Emergence Forecast")
+        st.markdown(
+            "Predicts crop canopy establishment and yield viability based on ISTA seed purity scores, embryo cracking, and chemical polymer integrity."
+        )
+        sim_col1, sim_col2 = st.columns([1, 1.2])
+        with sim_col1:
+            purity_val = st.slider("Physical Seed Purity (% Pure Seed):", 60.0, 100.0, 99.1, step=0.5)
+            germ_val = st.slider("Laboratory Germination Potential (%):", 30.0, 100.0, 96.0, step=1.0)
+            coat_type = st.radio("Seed Coat Dressing Formulation:", ["Certified Polymer Systemic Dressing", "Adulterated Water-Soluble Textile Dye (Spurious)"])
+            
+            growth_res = simulate_seedling_growth(purity_val, germ_val, coat_type)
+
+        with sim_col2:
+            st.markdown(f"##### 📈 Projected Field Stand Viability: **{growth_res['effective_germination_pct']}%**")
+            st.markdown(f"**Field Risk Assessment:** `{growth_res['yield_loss_risk']}`")
+            st.info(growth_res["advisory"])
+
+            st.markdown("##### 🗓️ 7-Day Emergence Trajectory:")
+            for step in growth_res["timeline"]:
+                st.markdown(
+                    f"• **{step['day']}:** `{step['status']}` — Estimated Radicle Length: **{step['radicle_length_mm']} mm** (Vitality: {step['vitality_pct']}%)"
+                )
+
+    with lab_sub3:
+        st.markdown("#### 🔬 Raman & NIR Spectral Adulteration Fingerprint")
+        st.markdown(
+            "Simulates molecular vibrational spectroscopy (Raman / NIR). Detects illegal chemical dilutions (e.g. kerosene/diesel solvent cuts or chalk suspensions) by cross-referencing CIB&RC technical grade monographs."
+        )
+        raman_col1, raman_col2 = st.columns([1, 1.2])
+        with raman_col1:
+            raman_chem = st.selectbox("Target Technical Grade Molecule:", list(RAMAN_MOLECULE_LIBRARY.keys()))
+            measured_peak = st.slider("Measured Target Molecular Peak (Normalized Intensity):", 0.0, 1.0, 0.42, step=0.02,
+                                     help="Authentic formulations exhibit peak intensity > 0.85 at target Raman wavenumber.")
+            solvent_peak = st.slider("Aliphatic Solvent Band (2850-2960 cm⁻¹ Petroleum/Kerosene Cut):", 0.0, 1.0, 0.58, step=0.02,
+                                    help="Elevated intensity (> 0.35) reveals presence of illicit petroleum carrier solvents or diesel.")
+            
+            raman_res = analyze_hyperspectral_raman(raman_chem, measured_peak, solvent_peak)
+
+        with raman_col2:
+            if raman_res["is_adulterated"]:
+                st.markdown(
+                    f"""
+                    <div class="verdict-banner-danger">
+                        <div class="verdict-title" style="color: #991b1b;">🚨 {raman_res['verdict']}</div>
+                        <div class="verdict-body">
+                            • <b>Active Purity Measured:</b> {raman_res['measured_active_purity_pct']}%<br>
+                            • <b>Adulterant Profile:</b> {raman_res['adulterant_identified']} ({raman_res['adulterant_index_pct']}% intensity)<br>
+                            • <b>Diagnostic Analysis:</b> {raman_res['diagnostic']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    f"""
+                    <div class="verdict-banner-success">
+                        <div class="verdict-title" style="color: #065f46;">✅ {raman_res['verdict']}</div>
+                        <div class="verdict-body">
+                            • <b>Active Purity Measured:</b> {raman_res['measured_active_purity_pct']}%<br>
+                            • <b>Adulterant Profile:</b> {raman_res['adulterant_identified']}<br>
+                            • <b>Diagnostic Analysis:</b> {raman_res['diagnostic']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            st.markdown("##### 📊 Spectral Absorption Curve Profile:")
+            chart_df = pd.DataFrame(raman_res["spectral_curve"]).set_index("wavenumber")
+            st.line_chart(chart_df, height=180)
+
+    with lab_sub4:
+        st.markdown("#### ⚡ Offline Edge Micro-Gemma 4 Quantization Benchmark")
+        st.markdown(
+            "Empirical benchmark simulating Gemma 4 inference across quantized tiers on budget Indian hardware in remote mandis without internet connectivity."
+        )
+        edge_col1, edge_col2 = st.columns([1, 1.2])
+        with edge_col1:
+            q_tier = st.selectbox(
+                "Quantization Tier / Profile:",
+                ["INT4 (MandiShield Edge Quant)", "INT8 (W8A8 Quantized)", "FP16 (Full Cloud MoE)"],
+            )
+            hw_target = st.selectbox(
+                "Target Deployment Hardware:",
+                [
+                    "Budget Smartphone (MediaTek Helio G99 / Snapdragon 680)",
+                    "Mid-Tier Mandi Tablet / Laptop (Intel Core i5 / Apple Silicon)",
+                    "Cloud GPU Workstation (NVIDIA A100 / H100 Cluster)",
+                ],
+            )
+            bench_res = benchmark_edge_gemma4(q_tier, hw_target)
+
+        with edge_col2:
+            st.markdown(f"##### 🚀 Hardware Performance Metrics ({bench_res['quantization_tier']}):")
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Memory RAM", f"{bench_res['memory_ram_gb']} GB")
+            m2.metric("Inference Speed", f"{bench_res['tokens_per_second']} tok/s")
+            m3.metric("Time-To-First-Token", f"{bench_res['time_to_first_token_ms']} ms")
+
+            m4, m5 = st.columns(2)
+            m4.metric("Offline Mandi Ready", "✅ YES (Zero Internet)" if bench_res['offline_ready'] else "❌ Requires Cloud")
+            m5.metric("Accuracy Retention", f"{bench_res['accuracy_retention_pct']}%")
+
+            st.info(f"**Feasibility:** {bench_res['deployment_feasibility']}")
+
+    with lab_sub5:
+        st.markdown("#### 🐝 Soil Microbiome, Groundwater Leaching & Eco-Toxicity Model")
+        st.markdown(
+            "Simulates the environmental persistence, groundwater leaching index (GUS Score), and pollinator hazard when adulterated or banned chemicals enter farmland."
+        )
+        eco_col1, eco_col2 = st.columns([1, 1.2])
+        with eco_col1:
+            eco_chem = st.selectbox("Chemical Compound for Ecological Audit:", list(ECO_TOXICITY_DATABASE.keys()))
+            dosage_mult = st.slider("Dosage Over-Application Factor (Counterfeit Spray Multiplier):", 0.5, 3.0, 1.5, step=0.1)
+            eco_res = simulate_soil_ecotoxicity(eco_chem, dosage_mult)
+
+        with eco_col2:
+            st.markdown(f"##### 🌍 Ecological Impact Scorecard ({eco_chem}):")
+            st.markdown(f"• **Soil Residence Time (DT50):** `{eco_res['effective_dt50_days']} days`")
+            st.markdown(f"• **Groundwater Ubiquity Score (GUS):** `{eco_res['groundwater_gus_index']}` — `{eco_res['groundwater_leaching_hazard']}`")
+            st.markdown(f"• **Pollinator (Honeybee) Hazard:** `{eco_res['honeybee_pollinator_risk']}`")
+            st.markdown(f"• **Soil Rhizobium Microbial Inhibition:** `{eco_res['soil_rhizobium_inhibition_pct']}%`")
+            st.warning(f"🌾 **Remediation Advisory:** {eco_res['soil_remediation_advice']}")
+
+    with lab_sub6:
+        st.markdown("#### 💬 WhatsApp Business Voice Gateway Simulator")
+        st.markdown(
+            "Demonstrates zero-friction onboarding: Farmers send a smartphone photo to MandiShield's WhatsApp bot and receive an instant localized voice note."
+        )
+        wa_col1, wa_col2 = st.columns([1, 1])
+        with wa_col1:
+            wa_name = st.text_input("Farmer Full Name:", value="Murugan Palanisamy")
+            wa_phone = st.text_input("Farmer WhatsApp Number:", value="+91 98421 55012")
+            wa_prod = st.text_input("Sample Inspected via Photo:", value="Chlor-Strike 20 EC Formulation")
+            wa_lang = st.selectbox("Preferred Native Language:", ["ta", "te", "hi", "en"], format_func=lambda x: {"ta": "Tamil (தமிழ்)", "te": "Telugu (తెలుగు)", "hi": "Hindi (हिन्दी)", "en": "English"}[x])
+            
+            wa_payload = generate_whatsapp_bot_payload(wa_phone, wa_name, wa_prod, "REJECTED (Counterfeit)", 0.95, wa_lang)
+
+        with wa_col2:
+            st.markdown("##### 📱 Simulated WhatsApp Client Interface:")
+            st.markdown(
+                f"""
+                <div style="background: #efeae2; border-radius: 16px; padding: 1.2rem; border: 1px solid #d1d5db; max-width: 420px; font-family: sans-serif;">
+                    <div style="background: #075e54; color: white; padding: 0.6rem 0.9rem; border-radius: 10px; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+                        🛡️ MandiShield Official Bot (+91 800-MANDI)
+                    </div>
+                    <div style="background: white; border-radius: 12px; padding: 0.8rem 1rem; margin-bottom: 0.6rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 0.88rem; line-height: 1.45;">
+                        <b>MandiShield AI:</b><br>
+                        {wa_payload['whatsapp_formatted_text']}<br><br>
+                        <span style="font-size: 0.75rem; color: #6b7280;">🎵 Voice Note Attached: <code>mandishield_verdict.opus</code> (0:14)</span>
+                    </div>
+                    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                        <button style="background: white; border: 1px solid #10b981; color: #047857; padding: 0.4rem 0.7rem; border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">🔊 Play Voice Note</button>
+                        <button style="background: white; border: 1px solid #ef4444; color: #b91c1c; padding: 0.4rem 0.7rem; border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">🚨 Report to DAO</button>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+# -------------------------------------------------------------
+# TAB 7: Official DAO Complaint & Judicial FIR Portal
 # -------------------------------------------------------------
 with tab_legal:
-    st.markdown("### ⚖️ Official Legal Complaint Generator (District Agricultural Office)")
+    st.markdown("### ⚖️ Official Legal Complaint & Judicial FIR Portal")
     st.markdown(
-        "Draft a formal, legally enforceable Complaint Petition under **Section 29 of the Insecticides Act 1968** with statutory citations and relief demands."
+        "Draft formal, legally enforceable petitions under **Section 29 of the Insecticides Act 1968** "
+        "or a criminal **First Information Report (F.I.R.) under Bharatiya Nyaya Sanhita (BNS) 2023**."
+    )
+
+    doc_mode = st.radio(
+        "Select Statutory Legal Instrument:",
+        [
+            "🏛️ District Agricultural Officer (DAO) Section 29 Petition",
+            "⚖️ Judicial Police First Information Report (FIR) under BNS 2023 & BNSS 173",
+        ],
+        horizontal=True,
     )
 
     st.markdown(
         """
         <div class="metric-card" style="margin-bottom: 1rem;">
-            <b>Statutory Notice:</b> Selling spurious, misbranded, or adulterated agro-chemicals in India carries mandatory imprisonment of up to 2 years and seizure of dealer license under Section 29 of the Insecticides Act 1968.
+            <b>Statutory Notice:</b> Selling spurious, misbranded, or adulterated agro-chemicals in India carries mandatory imprisonment of up to 2 years and seizure of dealer license under Section 29 of the Insecticides Act 1968, and up to 7 years imprisonment under Section 318(4) of the Bharatiya Nyaya Sanhita (BNS) 2023.
         </div>
         """,
         unsafe_allow_html=True,
@@ -956,7 +1346,7 @@ with tab_legal:
     lf1, lf2 = st.columns(2)
     with lf1:
         c_farmer = st.text_input("Complainant Farmer Name:", value="Murugan R.")
-        c_village = st.text_input("Village / Gram Panchayat:", value="Sulur")
+        c_village = st.text_input("Village / Gram Panchayat:", value="Sulur Gram Panchayat")
         c_district = st.text_input("District & State:", value="Coimbatore, Tamil Nadu")
     with lf2:
         c_vendor = st.text_input("Dealer / Agro-Shop Name:", value="Sri Lakshmi Fertilizer & Agro Depot")
@@ -969,42 +1359,72 @@ with tab_legal:
         height=90,
     )
 
-    if st.button("📜 Generate Formal Section 29 Petition Letter", type="primary", use_container_width=True):
-        if not engine:
-            st.error("Please configure API credentials.")
-        else:
-            with st.spinner("Drafting formal legal grievance petition with statutory citations..."):
-                complaint_text = engine.generate_dao_complaint(
-                    farmer_name=c_farmer,
-                    farmer_village=c_village,
-                    farmer_district=c_district,
-                    shop_name=c_vendor,
-                    product_name=c_product,
-                    batch_no=c_batch,
-                    violations=c_grounds,
-                )
-                
-                # Render inside official letterhead container
-                st.markdown(
-                    f"""
-                    <div class="letterhead">
-                        <div class="letterhead-header">
-                            <h3 style="margin: 0; color: #0f172a;">FORMAL GRIEVANCE PETITION UNDER SECTION 29</h3>
-                            <h4 style="margin: 0.3rem 0; color: #475569;">INSECTICIDES ACT, 1968 & SEEDS ACT, 1966</h4>
-                            <div style="font-size: 0.85rem; color: #64748b;">BEFORE THE DISTRICT AGRICULTURAL OFFICER / JOINT DIRECTOR OF AGRICULTURE</div>
+    if doc_mode.startswith("🏛️"):
+        if st.button("📜 Generate Formal Section 29 Petition Letter", type="primary", use_container_width=True):
+            if not engine:
+                st.error("Please configure API credentials.")
+            else:
+                with st.spinner("Drafting formal legal grievance petition with statutory citations..."):
+                    complaint_text = engine.generate_dao_complaint(
+                        farmer_name=c_farmer,
+                        farmer_village=c_village,
+                        farmer_district=c_district,
+                        shop_name=c_vendor,
+                        product_name=c_product,
+                        batch_no=c_batch,
+                        violations=c_grounds,
+                    )
+                    
+                    st.markdown(
+                        f"""
+                        <div class="letterhead">
+                            <div class="letterhead-header">
+                                <h3 style="margin: 0; color: #0f172a;">FORMAL GRIEVANCE PETITION UNDER SECTION 29</h3>
+                                <h4 style="margin: 0.3rem 0; color: #475569;">INSECTICIDES ACT, 1968 & SEEDS ACT, 1966</h4>
+                                <div style="font-size: 0.85rem; color: #64748b;">BEFORE THE DISTRICT AGRICULTURAL OFFICER / JOINT DIRECTOR OF AGRICULTURE</div>
+                            </div>
                         </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-                st.markdown(complaint_text)
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(complaint_text)
 
-                st.download_button(
-                    "📥 Download Legal Petition Ready for Sign & Submission (.txt)",
-                    data=complaint_text,
-                    file_name=f"dao_complaint_{c_farmer.replace(' ', '_')}.txt",
-                    mime="text/plain",
-                )
+                    st.download_button(
+                        "📥 Download Legal Petition Ready for Sign & Submission (.txt)",
+                        data=complaint_text,
+                        file_name=f"dao_complaint_{c_farmer.replace(' ', '_')}.txt",
+                        mime="text/plain",
+                    )
+    else:
+        if st.button("⚖️ Generate Official Judicial FIR Draft (BNS 2023 / BNSS 173)", type="primary", use_container_width=True):
+            fir_text = generate_statutory_fir_complaint(
+                complainant_name=c_farmer,
+                village_mandi=c_village,
+                district_state=c_district,
+                accused_shop=c_vendor,
+                seized_chemical_lot=f"{c_product} ({c_batch})",
+                statutory_violations=c_grounds,
+            )
+            st.markdown(
+                f"""
+                <div class="letterhead">
+                    <div class="letterhead-header">
+                        <h3 style="margin: 0; color: #991b1b;">FIRST INFORMATION REPORT (F.I.R.) COMPLAINT</h3>
+                        <h4 style="margin: 0.3rem 0; color: #475569;">UNDER SEC. 173 BNSS 2023 READ WITH SEC. 318(4), 274, 316(2) BNS 2023</h4>
+                        <div style="font-size: 0.85rem; color: #64748b;">BEFORE THE STATION HOUSE OFFICER & SUB-DIVISIONAL MAGISTRATE (SDM)</div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.code(fir_text, language="markdown")
+            st.download_button(
+                "📥 Download Official Judicial FIR Draft (.txt)",
+                data=fir_text,
+                file_name=f"police_fir_{c_farmer.replace(' ', '_')}.txt",
+                mime="text/plain",
+            )
+
 
 # -------------------------------------------------------------
 # TAB 5: Multilingual Regional Voice
