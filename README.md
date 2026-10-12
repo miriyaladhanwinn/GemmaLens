@@ -4,9 +4,9 @@
 
 [![Live Demo](https://img.shields.io/badge/Live%20App-mandishield.streamlit.app-FF4B4B?style=for-the-badge&logo=streamlit)](https://mandishield.streamlit.app/)
 [![Dev.to Technical Article](https://img.shields.io/badge/Dev.to-Read%20Technical%20Article-0a0a0a?style=for-the-badge&logo=dev.to)](https://dev.to/miriyaladhanwinn/mandishield-protecting-140m-indian-farmers-against-fake-pesticides-with-google-gemma-4-2h9f)
-[![Devpost](https://img.shields.io/badge/Devpost-Hackathon%20Project-003E54?style=for-the-badge&logo=devpost)](https://devpost.com)
+[![Devpost](https://img.shields.io/badge/Devpost-Hackathon%20Project-003E54?style=for-the-badge&logo=devpost)](https://devpost.com/software/mandishield)
 [![YouTube Walkthrough](https://img.shields.io/badge/YouTube-Watch%20Demo%20Video-red?style=for-the-badge&logo=youtube)](https://youtu.be/L5b6SEz4df4)
-[![Tests Passing](https://img.shields.io/badge/Tests-32%2F32%20Passing-brightgreen?style=for-the-badge&logo=python)](tests/)
+[![Tests Passing](https://img.shields.io/badge/Tests-33%2F33%20Passing-brightgreen?style=for-the-badge&logo=python)](tests/)
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Foundation Model](https://img.shields.io/badge/Foundation_Model-Google_Gemma_4-4285F4.svg)](https://ai.google.dev/gemma)
@@ -20,10 +20,10 @@
 
 - 🚀 **Live Working Web Application:** [https://mandishield.streamlit.app/](https://mandishield.streamlit.app/)
 - 📝 **Dev.to Technical Article & Whitepaper:** [Protecting 140M Indian Farmers Against Fake Pesticides with Google Gemma 4](https://dev.to/miriyaladhanwinn/mandishield-protecting-140m-indian-farmers-against-fake-pesticides-with-google-gemma-4-2h9f)
+- 🏆 **Devpost Submission:** [MandiShield Hackathon Project](https://devpost.com/software/mandishield)
 - 🎬 **Official YouTube Video Walkthrough:** [https://youtu.be/L5b6SEz4df4](https://youtu.be/L5b6SEz4df4)
 - 💻 **GitHub Repository:** [https://github.com/miriyaladhanwinn/GemmaLens](https://github.com/miriyaladhanwinn/GemmaLens)
-- 🏆 **Devpost Submission:** [Hacktoberfest Hack Day Coimbatore 2026 Submission](https://devpost.com)
-- 🧪 **Unit Test Suite:** **32/32 Passing Cleanly (100% Coverage)**
+- 🧪 **Unit Test Suite:** **33/33 Passing Cleanly (100% Coverage)**
 
 ---
 
@@ -116,7 +116,7 @@ flowchart TD
 | **Frameworks** | Python 3.14, Google GenAI SDK (`google-genai`), Streamlit 1.65, Pillow 12.0, Pandas, gTTS |
 | **Regulatory Standards** | CIB&RC Standards, Insecticides Act 1968, Seeds Act 1966, Bharatiya Nyaya Sanhita (BNS 2023), Agent Skills Open Standard |
 | **Infrastructure** | Streamlit Community Cloud, DigitalOcean App Platform / Droplets, Docker, Cloudflare Zero-Trust Tunnels |
-| **Testing** | Comprehensive Python `unittest` suite (**32/32 passing cleanly in 0.009s**) |
+| **Testing** | Comprehensive Python `unittest` suite (**33/33 passing cleanly in 0.009s**) |
 
 ---
 
@@ -140,7 +140,7 @@ cp .env.example .env
 # GEMINI_API_KEY="AIzaSy..."
 ```
 
-### 3. Run Test Suite (32/32 Passing)
+### 3. Run Test Suite (33/33 Passing)
 ```bash
 python -m unittest discover tests
 ```

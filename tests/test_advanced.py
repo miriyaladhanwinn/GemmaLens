@@ -2,6 +2,7 @@
 
 import unittest
 from advanced_features import (
+    OUTBREAK_HOTSPOTS,
     get_outbreak_dataframe,
     generate_dao_alert_message,
     calculate_dosage,
@@ -14,6 +15,14 @@ from advanced_features import (
 
 
 class TestAdvancedFeatures(unittest.TestCase):
+    def test_outbreak_hotspots_dataset(self):
+        self.assertIsInstance(OUTBREAK_HOTSPOTS, list)
+        self.assertGreaterEqual(len(OUTBREAK_HOTSPOTS), 5)
+        for h in OUTBREAK_HOTSPOTS:
+            self.assertIn("district", h)
+            self.assertIn("chemical_flagged", h)
+            self.assertIn("severity", h)
+
     def test_outbreak_dataframe_structure(self):
         df = get_outbreak_dataframe()
         self.assertGreaterEqual(len(df), 5)

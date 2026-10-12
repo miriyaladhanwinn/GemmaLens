@@ -11,6 +11,7 @@ import io
 import re
 import tempfile
 import streamlit as st
+import pandas as pd
 from PIL import Image
 from gtts import gTTS
 
@@ -52,6 +53,7 @@ from agri_db import (
 )
 from agent_skills import AgentSkillPackage
 from advanced_features import (
+    OUTBREAK_HOTSPOTS,
     get_outbreak_dataframe,
     generate_dao_alert_message,
     calculate_dosage,
